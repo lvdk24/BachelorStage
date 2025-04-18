@@ -16,6 +16,8 @@ get_credits_summary(TITANQ_DEV_API_KEY)
 #fill in your own base_path
 base_path = os.getenv("BASE_PATH")
 
+
+
 def load_weights_and_bias(nspins, alpha,ising_params_id):
     # Load weights and bias from file
     weights_path = f"{base_path}/varParTitanQ/ising_parameters/ising_params_id_{ising_params_id}/Ising_{nspins}_{alpha}_ti_J.csv"
