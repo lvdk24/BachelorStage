@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import h5py
 
-from TitanQ import base_path
+from TitanQ import base_path, calc_path, param_path, bonds_path
 from main import getVarEngVal, plotting, nspins_ls, alpha_ls, timeout_ls, precision_ls, load_engVal
 
 plotting_diff_RBMEng = True
@@ -83,7 +83,7 @@ def make_RBMEng_diff_plot(nspins, alpha, timeout, nruns, precision_param):
     plt.title(myTitle, loc='center', wrap=True)
     plt.legend(loc="upper right")
 
-    plt.savefig(f"{base_path}/calculations/RBMEng/precision_{precision_param}/RBMEngPlots/RBMEngPlot_comp_{nspins}_{alpha}_{timeout}_{nruns}.png")
+    plt.savefig(f"{calc_path}/RBMEng/precision_{precision_param}/RBMEngPlots/RBMEngPlot_comp_{nspins}_{alpha}_{timeout}_{nruns}.png")
     figcount += 1
     plt.show()
 
@@ -121,7 +121,7 @@ def make_RBMEng_diff_prec_plot(nspins, alpha, timeout, nruns, precision_ls):
     plt.title(myTitle, loc='center', wrap=True)
     plt.legend(loc="upper right")
 
-    plt.savefig(f"{base_path}/calculations/RBMEng/RBMEngPlots_comp_prec/RBMEngPlot_comp_prec_{nspins}_{alpha}_{timeout}_{nruns}.png")
+    plt.savefig(f"{calc_path}/RBMEng/RBMEngPlots_comp_prec/RBMEngPlot_comp_prec_{nspins}_{alpha}_{timeout}_{nruns}.png")
     figcount += 1
     plt.show()
 
@@ -150,7 +150,7 @@ def make_varEng_diff_plot(nspins, alpha, timeout, nruns, precision_param):
     plt.ylabel("Probability")
     plt.legend(loc="upper right")
     plt.title(myTitle, loc='center', wrap=True)
-    plt.savefig(f"{base_path}/calculations/varEng/precision_{precision_param}/varEngPlots/varEngPlot_comp_{nspins}_{alpha}_{timeout}_{nruns}.png")
+    plt.savefig(f"{calc_path}/varEng/precision_{precision_param}/varEngPlots/varEngPlot_comp_{nspins}_{alpha}_{timeout}_{nruns}.png")
     figcount += 1
     plt.show()
 
@@ -187,7 +187,7 @@ def make_varEng_diff_prec_plot(nspins, alpha, timeout, nruns, precision_ls):
     plt.ylabel("Probability")
     plt.legend(loc="upper right")
     plt.title(myTitle, loc='center', wrap=True)
-    plt.savefig(f"{base_path}/calculations/varEng/varEngPlots_comp_prec/varEngPlots_comp_prec_{nspins}_{alpha}_{timeout}_{nruns}.png")
+    plt.savefig(f"{calc_path}/varEng/varEngPlots_comp_prec/varEngPlots_comp_prec_{nspins}_{alpha}_{timeout}_{nruns}.png")
     figcount += 1
     plt.show()
 
@@ -209,7 +209,7 @@ def make_relErr_vs_nspins_plot(nspins_ls,alpha_ls):
     plt.legend()
 
     #saving and showing the figure
-    plt.savefig(f"{base_path}/calculations/accuracy/relErr_vs_nspins.png",bbox_inches='tight')
+    plt.savefig(f"{calc_path}/accuracy/relErr_vs_nspins.png",bbox_inches='tight')
     plt.show()
 
 def make_relErr_vs_timeout_plot(nspins_ls, alpha, nruns):
@@ -229,7 +229,7 @@ def make_relErr_vs_timeout_plot(nspins_ls, alpha, nruns):
     nspins_ind = 1
     for nspins in nspins_ls:
 
-        relErr_arr = np.loadtxt(f"{base_path}/calculations/accuracy/relErr_vs_timeout/relErr_{nspins}_{alpha}_{nruns}.csv", delimiter = ",")
+        relErr_arr = np.loadtxt(f"{calc_path}/accuracy/relErr_vs_timeout/relErr_{nspins}_{alpha}_{nruns}.csv", delimiter = ",")
         plt.plot(timeout_ls, relErr_arr, color=colorFader(c1, c2, nspins_ind / len(nspins_ls)), label=f'nspins = {nspins}')
         nspins_ind += 1
 
@@ -241,7 +241,7 @@ def make_relErr_vs_timeout_plot(nspins_ls, alpha, nruns):
     plt.legend()
 
     # saving and showing the figure
-    plt.savefig(f"{base_path}/calculations/accuracy/relErr_vs_timeout_{alpha}_{nruns}.png", bbox_inches='tight')
+    plt.savefig(f"{calc_path}/accuracy/relErr_vs_timeout_{alpha}_{nruns}.png", bbox_inches='tight')
     figcount += 1
     plt.show()
 

@@ -8,8 +8,9 @@ from scipy.spatial import distance
 import os
 import glob
 import json
+import asyncio
 
-from TitanQ import TitanQFunc, load_weights_and_bias, base_path, boltzmann_energy, magn_filt
+from TitanQ import TitanQFunc, load_weights_and_bias, base_path, calc_path, param_path, bonds_path, boltzmann_energy, magn_filt
 from NQS import trainingLoop, stochReconfig, calcLocEng, logWaveFunc
 
 # False, True
@@ -20,8 +21,6 @@ nspins_ls = [16,36,64,100]#,144,196,256,324, 400, 484]
 alpha_ls = [2,4]
 timeout_ls = [10]
 precision_ls = ['standard','high']
-
-
 
 
 def varPar_to_Ising(weightsRBM, biasRBM):
@@ -86,7 +85,7 @@ def getStates(nspins, alpha, timeout, nruns, ising_params_id, useTQ: bool, preci
     if useTQ:
 
         # check how many files of this configuration exist already
-        list_of_files = glob.glob(f'{base_path}/calculations/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout}/*.json')
+        list_of_files = glob.glob(f'{calc_path}/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout}/*.json')
 
         amount_files_existing = len(list_of_files)
 
@@ -137,7 +136,7 @@ def getStates(nspins, alpha, timeout, nruns, ising_params_id, useTQ: bool, preci
                     "visible_states": TQ_visStates
                 }
 
-                states_directory = f"{base_path}/calculations/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout}"
+                states_directory = f"{calc_path}/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout}"
                 os.makedirs(states_directory, exist_ok=True)
                 with open(f'{states_directory}/TQ_states_{nspins}_{alpha}_{timeout}_{nruns_ind+1}.json', 'w') as file:
                     json.dump(TitanQ_states, file)
@@ -148,7 +147,7 @@ def getStates(nspins, alpha, timeout, nruns, ising_params_id, useTQ: bool, preci
 
         for nruns_ind in range(nruns):
 
-            states_path = f"{base_path}/calculations/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout}/TQ_states_{nspins}_{alpha}_{timeout}_{nruns_ind + 1}.json"
+            states_path = f"{calc_path}/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout}/TQ_states_{nspins}_{alpha}_{timeout}_{nruns_ind + 1}.json"
 
             with open(states_path, 'r') as file:
                 TQ_states = json.load(file)
@@ -164,10 +163,10 @@ def load_engVal(nspins, alpha, timeout, nruns, precision_param):
     :param nruns:
     :return: 5 arrays van energiewaarden
     '''
-    distributions_path = f"{base_path}/varParTitanQ/distributions"
+    distributions_path = f"{param_path}/distributions"
 
     # Load the distributions
-    distribution_path = f"{base_path}/varParTitanQ/distributions/{nspins}_{alpha}_Eloc.h5"
+    distribution_path = f"{param_path}/distributions/{nspins}_{alpha}_Eloc.h5"
 
     #load energies from UF
     with h5py.File(distribution_path, "r") as f:
@@ -177,9 +176,9 @@ def load_engVal(nspins, alpha, timeout, nruns, precision_param):
         RBMEngVal_UF = f['RBMEnergy'][()]
     # size1, size2 = varEngVal_UF.shape
     # varEngVal_UF.reshape(size1*size2)
-    RBMEngVal_TQ = np.loadtxt(f"{base_path}/calculations/RBMEng/precision_{precision_param}/RBMEng_{nspins}_{alpha}_{timeout}_{nruns}.csv",delimiter=",")
-    varEngVal_TQ = np.loadtxt(f"{base_path}/calculations/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv",delimiter=",")
-    locEngVal_TQ = np.loadtxt(f"{base_path}/calculations/locEng/precision_{precision_param}/locEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", delimiter=",")
+    RBMEngVal_TQ = np.loadtxt(f"{calc_path}/RBMEng/precision_{precision_param}/RBMEng_{nspins}_{alpha}_{timeout}_{nruns}.csv",delimiter=",")
+    varEngVal_TQ = np.loadtxt(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv",delimiter=",")
+    locEngVal_TQ = np.loadtxt(f"{calc_path}/locEng/precision_{precision_param}/locEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", delimiter=",")
 
     return RBMEngVal_TQ, RBMEngVal_UF, locEngVal_TQ, varEngVal_UF, varEngVal_TQ
 
@@ -195,14 +194,14 @@ def getVarEngVal(nspins, alpha, timeout, nruns, ising_params_id, precision_param
 
     #load the filtered states
     # TQ_visStates = np.loadtxt(f"{base_path}/calculations/states/states_{nspins}_{alpha}.csv", delimiter=",")
-    TQ_filt_states = np.loadtxt(f"{base_path}/calculations/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv", delimiter = ",")
+    TQ_filt_states = np.loadtxt(f"{calc_path}/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv", delimiter = ",")
 
     #get the ising parameters and transform to RBM parameters
     weightsIsing, biasIsing = load_weights_and_bias(nspins, alpha, ising_params_id)
     weightsRBM, biasRBM = varPar_to_RBM(weightsIsing, biasIsing, nspins, alpha)
 
     #get corresponding lattice bonds
-    with open(f'{base_path}/bonds/bonds_python/all_bonds_{nspins}.json', 'r') as file:
+    with open(f'{bonds_path}/bonds_python/all_bonds_{nspins}.json', 'r') as file:
         bonds = json.load(file)
 
     # calculate variational energy and create array for all states
@@ -212,30 +211,30 @@ def getVarEngVal(nspins, alpha, timeout, nruns, ising_params_id, precision_param
         varEngVal_arr.append(calcLocEng(TQ_filt_states[states_ind], bonds, weightsRBM, biasRBM)/(4 * nspins))
         locEngVal_arr.append(calcLocEng(TQ_filt_states[states_ind], bonds, weightsRBM, biasRBM))
 
-    np.savetxt(f"{base_path}/calculations/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv",varEngVal_arr, delimiter = ",")
-    np.savetxt(f"{base_path}/calculations/locEng/precision_{precision_param}/locEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", locEngVal_arr, delimiter=",")
+    np.savetxt(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv",varEngVal_arr, delimiter = ",")
+    np.savetxt(f"{calc_path}/locEng/precision_{precision_param}/locEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", locEngVal_arr, delimiter=",")
     return np.array(varEngVal_arr), np.array(locEngVal_arr)
 
 def calcRBMEng(nspins, alpha, timeout, nruns, precision_param):
     #loading the Ising parameters
-    bias_path = f"{base_path}/varParTitanQ/ising_parameters/ising_params_id_0/Ising_{nspins}_{alpha}_ti_h.csv"
+    bias_path = f"{param_path}/ising_parameters/ising_params_id_0/Ising_{nspins}_{alpha}_ti_h.csv"
     bias_Ising = np.loadtxt(bias_path, delimiter=",")
 
-    weights_path = f"{base_path}/varParTitanQ/ising_parameters/ising_params_id_0/Ising_{nspins}_{alpha}_ti_J.csv"
+    weights_path = f"{param_path}/ising_parameters/ising_params_id_0/Ising_{nspins}_{alpha}_ti_J.csv"
     weights_Ising = np.loadtxt(weights_path, delimiter=",")
 
     #transforming them to RBM parameters W, b
     weights_RBM, bias_RBM = varPar_to_RBM(weights_Ising, bias_Ising, nspins, alpha)
 
     #load the filtered states
-    filt_states_path = f"{base_path}/calculations/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv"
+    filt_states_path = f"{calc_path}/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv"
     filt_states = np.loadtxt(filt_states_path, delimiter=",")
 
     #calculate RBM energy and write to file
     RBMEng_arr = []
     for states_ind in range(len(filt_states)):
         RBMEng_arr.append(-logWaveFunc(filt_states[states_ind], weights_RBM, bias_RBM))
-    np.savetxt(f"{base_path}/calculations/RBMEng/precision_{precision_param}/RBMEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", RBMEng_arr,delimiter = ",")
+    np.savetxt(f"{calc_path}/RBMEng/precision_{precision_param}/RBMEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", RBMEng_arr,delimiter = ",")
 
     return RBMEng_arr
 
@@ -334,21 +333,35 @@ def calcJSDistance(nspins, alpha, timeout, nruns, precision_param):
 # print(len(load_engVal(16,2,10,8)[-2]))
 # print(calcRelErr(16,2,10,8))
 
-if calculating:
+async def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
     for timeout_ind in tqdm(timeout_ls):
         for alpha_ind in tqdm(alpha_ls):
             for nspins_ind in tqdm(nspins_ls):
-                # getStates(nspins_ind, alpha_ind, timeout_ind, 8, 0, True, 'standard')
-                # magn_filt(nspins_ind, alpha_ind, timeout_ind, 8, 'standard')
-                # calcRBMEng(nspins_ind, alpha_ind, timeout_ind, 8, 'standard')
-                # getVarEngVal(nspins_ind, alpha_ind, timeout_ind, 8, 0, 'standard')
-            # JS_arr = calcJSDistance(nspins_ind, alpha_ind, 10,8)
-            # np.savetxt(f"{base_path}/calculations/accuracy/relErr_vs_nspins/JensenShannon_10_8", JS_arr, delimiter=",")
+                await getStates(nspins_ind, alpha_ind, timeout_ind, nruns, 0, True, precision_param)
+                await magn_filt(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
+                await calcRBMEng(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
+                await getVarEngVal(nspins_ind, alpha_ind, timeout_ind, nruns, 0, precision_param)
 
-                relErr_arr.append(calcRelErr(nspins_ind, alpha_ind, timeout_ind, nruns=8))
-                np.savetxt(f"{base_path}/calculations/accuracy/relErr_vs_timeout/relErr_{nspins_ind}_{alpha_ind}_8.csv", relErr_arr, delimiter = ",")
-else:
-    print("Calculating is off")
+                relErr_arr = []
+                relErrVal = await calcRelErr(nspins_ind, alpha_ind, timeout_ind, nruns=nruns)
+                relErr_arr.append(relErrVal)
+                np.savetxt(f"{calc_path}/accuracy/relErr_vs_timeout/relErr_{nspins_ind}_{alpha_ind}_8.csv",
+                           relErr_arr, delimiter=",")
+
+# if calculating:
+#     for timeout_ind in tqdm(timeout_ls):
+#         for alpha_ind in tqdm(alpha_ls):
+#             for nspins_ind in tqdm(nspins_ls):
+#                 # getStates(nspins_ind, alpha_ind, timeout_ind, 8, 0, True, 'standard')
+#                 # magn_filt(nspins_ind, alpha_ind, timeout_ind, 8, 'standard')
+#                 # calcRBMEng(nspins_ind, alpha_ind, timeout_ind, 8, 'standard')
+#                 # getVarEngVal(nspins_ind, alpha_ind, timeout_ind, 8, 0, 'standard')
+#             # JS_arr = calcJSDistance(nspins_ind, alpha_ind, 10,8)
+#             # np.savetxt(f"{base_path}/calculations/accuracy/relErr_vs_nspins/JensenShannon_10_8", JS_arr, delimiter=",")
+#
+#                 relErr_arr.append(calcRelErr(nspins_ind, alpha_ind, timeout_ind, nruns=8))
+#                 np.savetxt(f"{base_path}/calculations/accuracy/relErr_vs_timeout/relErr_{nspins_ind}_{alpha_ind}_8.csv", relErr_arr, delimiter = ",")
+
 
 # precision_ls = ['high']
 # nruns = 8
@@ -360,4 +373,3 @@ else:
 #                     old_path = f"{base_path}/calculations/states/precision_{precision}/all_states_{nspins_ind}_{alpha_ind}_{timeout_ind}/TQ_states_{nspins_ind}_{alpha_ind}_{timeout_ind}_{nruns_ind + 1}.json"
 #                     new_path = f"{base_path}/calculations/states/precision_{precision}/all_states_{nspins_ind}_{alpha_ind}_{timeout_ind}_{precision}/TQ_states_{nspins_ind}_{alpha_ind}_{timeout_ind}_{nruns_ind + 1}_{precision}.json"
 #                     os.rename(old_path, new_path)
-

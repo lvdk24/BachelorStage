@@ -2,5 +2,9 @@
 .idea/**
 __pycache__
 .env
+ising_params
+varParTitanQ
+calculations
+bonds
 
 

@@ -9,19 +9,23 @@ import json
 
 
 load_dotenv()
+
 #needed to use TitanQ
 TITANQ_DEV_API_KEY = os.getenv("TITANQ_DEV_API_KEY")
 get_credits_summary(TITANQ_DEV_API_KEY)
 
 #fill in your own base_path
 base_path = os.getenv("BASE_PATH")
+calc_path = f"{base_path}/calculations"
+param_path = f"{base_path}/ising_params"
+bonds_path = f"{base_path}/bonds"
 
 
 
 def load_weights_and_bias(nspins, alpha,ising_params_id):
     # Load weights and bias from file
-    weights_path = f"{base_path}/varParTitanQ/ising_parameters/ising_params_id_{ising_params_id}/Ising_{nspins}_{alpha}_ti_J.csv"
-    bias_path = f"{base_path}/varParTitanQ/ising_parameters/ising_params_id_{ising_params_id}/Ising_{nspins}_{alpha}_ti_h.csv"
+    weights_path = f"{param_path}/ising_parameters/ising_params_id_{ising_params_id}/Ising_{nspins}_{alpha}_ti_J.csv"
+    bias_path = f"{param_path}/ising_parameters/ising_params_id_{ising_params_id}/Ising_{nspins}_{alpha}_ti_h.csv"
 
     weights = np.loadtxt(weights_path, delimiter=",", dtype=np.float32)
     bias = np.loadtxt(bias_path, delimiter=",", dtype=np.float32)
@@ -126,7 +130,7 @@ def magn_filt(nspins, alpha, timeout, nruns, precision_param):
     for nruns_ind in range(nruns):
         #opens one states file
 
-        states_path = f"{base_path}/calculations/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout}/TQ_states_{nspins}_{alpha}_{timeout}_{nruns_ind + 1}.json"
+        states_path = f"{calc_path}/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout}/TQ_states_{nspins}_{alpha}_{timeout}_{nruns_ind + 1}.json"
 
         with open(states_path,'r') as file:
             TQ_states_total = json.load(file)
@@ -138,7 +142,7 @@ def magn_filt(nspins, alpha, timeout, nruns, precision_param):
                 TQ_states_filtered.append(TQ_states[state_index])
 
     #save the states to a textfile
-    np.savetxt(f"{base_path}/calculations/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv", TQ_states_filtered, delimiter=",")
+    np.savetxt(f"{calc_path}/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv", TQ_states_filtered, delimiter=",")
     return TQ_states_filtered
 
 
