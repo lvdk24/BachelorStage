@@ -373,3 +373,4 @@ async def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
 #                     old_path = f"{base_path}/calculations/states/precision_{precision}/all_states_{nspins_ind}_{alpha_ind}_{timeout_ind}/TQ_states_{nspins_ind}_{alpha_ind}_{timeout_ind}_{nruns_ind + 1}.json"
 #                     new_path = f"{base_path}/calculations/states/precision_{precision}/all_states_{nspins_ind}_{alpha_ind}_{timeout_ind}_{precision}/TQ_states_{nspins_ind}_{alpha_ind}_{timeout_ind}_{nruns_ind + 1}_{precision}.json"
 #                     os.rename(old_path, new_path)
+getStates(16,2,10,9, 0, True, 'high')
