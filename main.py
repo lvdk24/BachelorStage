@@ -351,11 +351,11 @@ async def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
     for timeout_ind in tqdm(timeout_ls):
         for alpha_ind in tqdm(alpha_ls):
             for nspins_ind in tqdm(nspins_ls):
-                # await getStates(nspins_ind, alpha_ind, timeout_ind, nruns, 0, True, precision_param)
+                await getStates(nspins_ind, alpha_ind, timeout_ind, nruns, 0, True, precision_param)
                 # await magn_filt(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
                 # await magn_filt(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
                 # await calcRBMEng(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
-                await getVarEngVal(nspins_ind, alpha_ind, timeout_ind, nruns, 0, precision_param)
+                # await getVarEngVal(nspins_ind, alpha_ind, timeout_ind, nruns, 0, precision_param)
 
                 # relErr_arr = []
                 # relErrVal = await calcRelErr(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
@@ -388,7 +388,8 @@ async def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
 #                     old_path = f"{base_path}/calculations/states/precision_{precision}/all_states_{nspins_ind}_{alpha_ind}_{timeout_ind}/TQ_states_{nspins_ind}_{alpha_ind}_{timeout_ind}_{nruns_ind + 1}.json"
 #                     new_path = f"{base_path}/calculations/states/precision_{precision}/all_states_{nspins_ind}_{alpha_ind}_{timeout_ind}_{precision}/TQ_states_{nspins_ind}_{alpha_ind}_{timeout_ind}_{nruns_ind + 1}_{precision}.json"
 #                     os.rename(old_path, new_path)
-asyncio.run(doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns = 32, precision_param = 'high'))
+print("Dit werkt op CN38")
+# asyncio.run(doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns = 32, precision_param = 'high'))
 # doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns = 32, precision_param = 'high')
 
 
