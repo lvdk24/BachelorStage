@@ -1,0 +1,1 @@
+rsync -avz lilo:/home/lkleij/Stage/BachelorStage/calculations/ calculations -P

@@ -17,9 +17,9 @@ from NQS import trainingLoop, stochReconfig, calcLocEng, logWaveFunc
 plotting = False
 calculating = False
 
-nspins_ls = [16,36,64,100]#,144,196,256,324, 400, 484]
+nspins_ls = [16,36,64,100,196,324,484]
 alpha_ls = [2,4]
-timeout_ls = [10]
+timeout_ls = [2, 4, 10, 16, 24, 32]
 precision_ls = ['standard','high']
 
 
@@ -69,7 +69,7 @@ def varPar_to_RBM(weightsIsing, biasIsing, nspins, alpha):
 
     return weightsRBM, biasRBM
 
-def getStates(nspins, alpha, timeout, nruns, ising_params_id, useTQ: bool, precision_param):
+async def getStates(nspins, alpha, timeout, nruns, ising_params_id, useTQ: bool, precision_param):
 
     # dimensions
     M = nspins * alpha
@@ -93,10 +93,9 @@ def getStates(nspins, alpha, timeout, nruns, ising_params_id, useTQ: bool, preci
         nruns_new = nruns - amount_files_existing
 
         #if no new runs need to be done
-        if nruns_new <= 0:
-            print(f"You already have {amount_files_existing} files with states, you asked for {nruns} in total.")
-
-        else:
+        # if nruns_new <= 0:
+        #     print(f"You already have {amount_files_existing} files with states, you asked for {nruns} in total.")
+        if nruns_new > 0:
 
             #separate the files of sampled states into chunks of 512 (= 1 nruns). Ranging from [the highest existing index] to new nruns index
             for nruns_ind in tqdm(range(amount_files_existing, nruns)):
@@ -141,6 +140,9 @@ def getStates(nspins, alpha, timeout, nruns, ising_params_id, useTQ: bool, preci
                 with open(f'{states_directory}/TQ_states_{nspins}_{alpha}_{timeout}_{nruns_ind+1}.json', 'w') as file:
                     json.dump(TitanQ_states, file)
 
+        #to prevent nonetype error (doesn't matter what it returns)
+        # return True
+
     # load from textfile
     else:
         visState_arr = []
@@ -182,7 +184,7 @@ def load_engVal(nspins, alpha, timeout, nruns, precision_param):
 
     return RBMEngVal_TQ, RBMEngVal_UF, locEngVal_TQ, varEngVal_UF, varEngVal_TQ
 
-def getVarEngVal(nspins, alpha, timeout, nruns, ising_params_id, precision_param):
+async def getVarEngVal(nspins, alpha, timeout, nruns, ising_params_id, precision_param):
     ''' Uses the filtered states
 
     Also writes the states to a textfile via getStates
@@ -194,52 +196,57 @@ def getVarEngVal(nspins, alpha, timeout, nruns, ising_params_id, precision_param
 
     #load the filtered states
     # TQ_visStates = np.loadtxt(f"{base_path}/calculations/states/states_{nspins}_{alpha}.csv", delimiter=",")
-    TQ_filt_states = np.loadtxt(f"{calc_path}/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv", delimiter = ",")
 
-    #get the ising parameters and transform to RBM parameters
-    weightsIsing, biasIsing = load_weights_and_bias(nspins, alpha, ising_params_id)
-    weightsRBM, biasRBM = varPar_to_RBM(weightsIsing, biasIsing, nspins, alpha)
+    #check if file already exists.
+    if not os.path.isfile(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv"):
+        TQ_filt_states = np.loadtxt(f"{calc_path}/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv", delimiter = ",")
 
-    #get corresponding lattice bonds
-    with open(f'{bonds_path}/bonds_python/all_bonds_{nspins}.json', 'r') as file:
-        bonds = json.load(file)
+        #get the ising parameters and transform to RBM parameters
+        weightsIsing, biasIsing = load_weights_and_bias(nspins, alpha, ising_params_id)
+        weightsRBM, biasRBM = varPar_to_RBM(weightsIsing, biasIsing, nspins, alpha)
 
-    # calculate variational energy and create array for all states
-    varEngVal_arr = []
-    locEngVal_arr = []
-    for states_ind in range(len(TQ_filt_states)):
-        varEngVal_arr.append(calcLocEng(TQ_filt_states[states_ind], bonds, weightsRBM, biasRBM)/(4 * nspins))
-        locEngVal_arr.append(calcLocEng(TQ_filt_states[states_ind], bonds, weightsRBM, biasRBM))
+        #get corresponding lattice bonds
+        with open(f'{bonds_path}/bonds_python/all_bonds_{nspins}.json', 'r') as file:
+            bonds = json.load(file)
 
-    np.savetxt(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv",varEngVal_arr, delimiter = ",")
-    np.savetxt(f"{calc_path}/locEng/precision_{precision_param}/locEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", locEngVal_arr, delimiter=",")
-    return np.array(varEngVal_arr), np.array(locEngVal_arr)
+        # calculate variational energy and create array for all states
+        varEngVal_arr = []
+        locEngVal_arr = []
+        for states_ind in range(len(TQ_filt_states)):
+            varEngVal_arr.append(calcLocEng(TQ_filt_states[states_ind], bonds, weightsRBM, biasRBM)/(4 * nspins))
+            locEngVal_arr.append(calcLocEng(TQ_filt_states[states_ind], bonds, weightsRBM, biasRBM))
 
-def calcRBMEng(nspins, alpha, timeout, nruns, precision_param):
+        np.savetxt(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv",varEngVal_arr, delimiter = ",")
+        np.savetxt(f"{calc_path}/locEng/precision_{precision_param}/locEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", locEngVal_arr, delimiter=",")
+        return np.array(varEngVal_arr), np.array(locEngVal_arr)
+
+
+async def calcRBMEng(nspins, alpha, timeout, nruns, precision_param):
     #loading the Ising parameters
-    bias_path = f"{param_path}/ising_parameters/ising_params_id_0/Ising_{nspins}_{alpha}_ti_h.csv"
-    bias_Ising = np.loadtxt(bias_path, delimiter=",")
+    if not os.path.isfile(f"{calc_path}/RBMEng/precision_{precision_param}/RBMEng_{nspins}_{alpha}_{timeout}_{nruns}.csv"):
+        bias_path = f"{param_path}/ising_parameters/ising_params_id_0/Ising_{nspins}_{alpha}_ti_h.csv"
+        bias_Ising = np.loadtxt(bias_path, delimiter=",")
 
-    weights_path = f"{param_path}/ising_parameters/ising_params_id_0/Ising_{nspins}_{alpha}_ti_J.csv"
-    weights_Ising = np.loadtxt(weights_path, delimiter=",")
+        weights_path = f"{param_path}/ising_parameters/ising_params_id_0/Ising_{nspins}_{alpha}_ti_J.csv"
+        weights_Ising = np.loadtxt(weights_path, delimiter=",")
 
-    #transforming them to RBM parameters W, b
-    weights_RBM, bias_RBM = varPar_to_RBM(weights_Ising, bias_Ising, nspins, alpha)
+        #transforming them to RBM parameters W, b
+        weights_RBM, bias_RBM = varPar_to_RBM(weights_Ising, bias_Ising, nspins, alpha)
 
-    #load the filtered states
-    filt_states_path = f"{calc_path}/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv"
-    filt_states = np.loadtxt(filt_states_path, delimiter=",")
+        #load the filtered states
+        filt_states_path = f"{calc_path}/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv"
+        filt_states = np.loadtxt(filt_states_path, delimiter=",")
 
-    #calculate RBM energy and write to file
-    RBMEng_arr = []
-    for states_ind in range(len(filt_states)):
-        RBMEng_arr.append(-logWaveFunc(filt_states[states_ind], weights_RBM, bias_RBM))
-    np.savetxt(f"{calc_path}/RBMEng/precision_{precision_param}/RBMEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", RBMEng_arr,delimiter = ",")
+        #calculate RBM energy and write to file
+        RBMEng_arr = []
+        for states_ind in range(len(filt_states)):
+            RBMEng_arr.append(-logWaveFunc(filt_states[states_ind], weights_RBM, bias_RBM))
+        np.savetxt(f"{calc_path}/RBMEng/precision_{precision_param}/RBMEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", RBMEng_arr,delimiter = ",")
 
-    return RBMEng_arr
+        return RBMEng_arr
 
-def calcRelErr(nspins, alpha, timeout, nruns, precision_param):
-    """Gives relative error of one TQ run wrt UF
+async def calcRelErr_vs_timeout(nspins, alpha, timeout_ls, nruns, precision_param):
+    """Gives relative error vs timeout of one TQ run wrt UF
 
     :param nspins:
     :param alpha:
@@ -248,18 +255,25 @@ def calcRelErr(nspins, alpha, timeout, nruns, precision_param):
     :return:
     """
 
-    #load the variational energy values
-    _, _, _, varEngVal_UF, varEngVal_TQ = load_engVal(nspins, alpha, timeout, nruns, precision_param)
+    relErr_arr = []
 
-    #calculate the averages
-    avg_varEng_UF_1 = sum(varEngVal_UF) / len(varEngVal_UF)
-    avg_varEng_UF_2 = sum(avg_varEng_UF_1) / len(avg_varEng_UF_1)
-    avg_varEng_TQ = sum(varEngVal_TQ) / len(varEngVal_TQ)
+    for timeout_ind in timeout_ls:
+        #load the variational energy values
+        _, _, _, varEngVal_UF, varEngVal_TQ = load_engVal(nspins, alpha, timeout_ind, nruns, precision_param)
 
-    #calculate the relative error
-    relErr = abs((avg_varEng_UF_2 - avg_varEng_TQ)/avg_varEng_UF_2)
 
-    return relErr
+        #calculate the averages, have to go twice over varEng_UF
+        avg_varEng_UF_1 = sum(varEngVal_UF) / len(varEngVal_UF)
+        avg_varEng_UF_2 = sum(avg_varEng_UF_1) / len(avg_varEng_UF_1)
+        avg_varEng_TQ = sum(varEngVal_TQ) / len(varEngVal_TQ)
+
+        #calculate the relative error
+        relErr = abs((avg_varEng_UF_2 - avg_varEng_TQ)/avg_varEng_UF_2)
+
+        relErr_arr.append(relErr)
+    np.savetxt(f"{calc_path}/accuracy/precision_{precision_param}/relErr_vs_timeout/relErr_{nspins}_{alpha}_{nruns}.csv",relErr_arr, delimiter=",")
+
+    return relErr_arr
 
 def calcJSDistance(nspins, alpha, timeout, nruns, precision_param):
     """Gives the Jenson-Shannon distance between two distributions
@@ -337,16 +351,17 @@ async def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
     for timeout_ind in tqdm(timeout_ls):
         for alpha_ind in tqdm(alpha_ls):
             for nspins_ind in tqdm(nspins_ls):
-                await getStates(nspins_ind, alpha_ind, timeout_ind, nruns, 0, True, precision_param)
-                await magn_filt(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
-                await calcRBMEng(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
+                # await getStates(nspins_ind, alpha_ind, timeout_ind, nruns, 0, True, precision_param)
+                # await magn_filt(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
+                # await magn_filt(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
+                # await calcRBMEng(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
                 await getVarEngVal(nspins_ind, alpha_ind, timeout_ind, nruns, 0, precision_param)
 
-                relErr_arr = []
-                relErrVal = await calcRelErr(nspins_ind, alpha_ind, timeout_ind, nruns=nruns)
-                relErr_arr.append(relErrVal)
-                np.savetxt(f"{calc_path}/accuracy/relErr_vs_timeout/relErr_{nspins_ind}_{alpha_ind}_8.csv",
-                           relErr_arr, delimiter=",")
+                # relErr_arr = []
+                # relErrVal = await calcRelErr(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
+                # relErr_arr.append(relErrVal)
+                # np.savetxt(f"{calc_path}/accuracy/precision_{precision_param}/relErr_vs_timeout/relErr_{nspins_ind}_{alpha_ind}_{nruns}.csv",
+                #            relErr_arr, delimiter=",")
 
 # if calculating:
 #     for timeout_ind in tqdm(timeout_ls):
@@ -373,4 +388,9 @@ async def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
 #                     old_path = f"{base_path}/calculations/states/precision_{precision}/all_states_{nspins_ind}_{alpha_ind}_{timeout_ind}/TQ_states_{nspins_ind}_{alpha_ind}_{timeout_ind}_{nruns_ind + 1}.json"
 #                     new_path = f"{base_path}/calculations/states/precision_{precision}/all_states_{nspins_ind}_{alpha_ind}_{timeout_ind}_{precision}/TQ_states_{nspins_ind}_{alpha_ind}_{timeout_ind}_{nruns_ind + 1}_{precision}.json"
 #                     os.rename(old_path, new_path)
-getStates(16,2,10,9, 0, True, 'high')
+asyncio.run(doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns = 32, precision_param = 'high'))
+# doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns = 32, precision_param = 'high')
+
+
+
+
