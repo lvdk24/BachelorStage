@@ -351,11 +351,10 @@ async def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
     for timeout_ind in tqdm(timeout_ls):
         for alpha_ind in tqdm(alpha_ls):
             for nspins_ind in tqdm(nspins_ls):
-                await getStates(nspins_ind, alpha_ind, timeout_ind, nruns, 0, True, precision_param)
-                # await magn_filt(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
+                # await getStates(nspins_ind, alpha_ind, timeout_ind, nruns, 0, True, precision_param)
                 # await magn_filt(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
                 # await calcRBMEng(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
-                # await getVarEngVal(nspins_ind, alpha_ind, timeout_ind, nruns, 0, precision_param)
+                await getVarEngVal(nspins_ind, alpha_ind, timeout_ind, nruns, 0, precision_param)
 
                 # relErr_arr = []
                 # relErrVal = await calcRelErr(nspins_ind, alpha_ind, timeout_ind, nruns, precision_param)
