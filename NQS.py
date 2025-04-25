@@ -30,6 +30,7 @@ def getFullVarPar(weightsIndep, biasIndep):
     weightsMask = np.tile(biasMask, (N, 1)).astype(np.bool_)
 
     return weightsFull, weightsMask, biasFull, biasMask
+    #mask geeft true false terug op de plekken in de matrix
 
 def nextStateMC(state, weights, bias):
     """ Generate the next state in the Markov chain using the metropolis-hasing algorithm

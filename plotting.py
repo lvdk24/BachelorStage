@@ -226,22 +226,23 @@ def make_relErr_vs_timeout_plot(nspins_ls, alpha, nruns):
     c1 = 'red'  # blue
     c2 = 'yellow'  # green
 
-    nspins_ind = 1
-    for nspins in nspins_ls:
+    nspins_counter = 1
+    for nspins_ind in nspins_ls:
 
-        relErr_arr = np.loadtxt(f"{calc_path}/accuracy/relErr_vs_timeout/relErr_{nspins}_{alpha}_{nruns}.csv", delimiter = ",")
-        plt.plot(timeout_ls, relErr_arr, color=colorFader(c1, c2, nspins_ind / len(nspins_ls)), label=f'nspins = {nspins}')
-        nspins_ind += 1
+        #Hier moet nog de mean bij +stddev/errorbars van de split e
+        relErr_arr = np.loadtxt(f"{calc_path}/accuracy/precision_high/relErr_vs_timeout/relErr_{nspins_ind}_{alpha}_{nruns}.csv", delimiter = ",")
+        plt.plot(timeout_ls, relErr_arr, color=colorFader(c1, c2, nspins_counter / len(nspins_ls)), label=f'n = {nspins_ind}')
+        nspins_counter += 1
 
     # aesthetics
     plt.xticks(timeout_ls)
     plt.xlabel("timeout (s)")
     plt.ylabel("Relative error")
-    plt.title(f"Relative error for alpha={alpha} and nruns = 8")
+    plt.title(f"alpha={alpha}, nruns = {nruns}")
     plt.legend()
 
     # saving and showing the figure
-    plt.savefig(f"{calc_path}/accuracy/relErr_vs_timeout_{alpha}_{nruns}.png", bbox_inches='tight')
+    plt.savefig(f"{calc_path}/accuracy/precision_high/relErr_vs_timeout_{alpha}_{nruns}.png", bbox_inches='tight')
     figcount += 1
     plt.show()
 
@@ -250,11 +251,12 @@ def make_relErr_vs_timeout_plot(nspins_ls, alpha, nruns):
 # making distributions differences plots
 if plotting:
     for alpha in alpha_ls:
-        for nspins in nspins_ls:
+        make_relErr_vs_timeout_plot(nspins_ls, alpha, nruns=32)
+        # for nspins in nspins_ls:
         # make_relErr_vs_timeout_plot(nspins_ls, alpha, 8)
         #     make_RBMEng_diff_plot(nspins, alpha, 10, 8, 'standard')
         #     make_varEng_diff_plot(nspins, alpha, 10, 8, 'standard')
-            make_varEng_diff_prec_plot(nspins, alpha, 10, 8, precision_ls)
+        #     make_varEng_diff_prec_plot(nspins, alpha, 10, 8, precision_ls)
             # make_RBMEng_diff_plot(nspins,alpha,10,8)
     # make_RBMEng_diff_plot(64, 2, 60, 8)
     # make_RBMEng_diff_plot(64, 2, 10, 32)

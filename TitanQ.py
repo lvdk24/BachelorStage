@@ -7,12 +7,11 @@ from dotenv import load_dotenv
 import glob
 import json
 
-
 load_dotenv()
 
 #needed to use TitanQ
-TITANQ_DEV_API_KEY = os.getenv("TITANQ_DEV_API_KEY")
-get_credits_summary(TITANQ_DEV_API_KEY)
+# TITANQ_DEV_API_KEY = os.getenv("TITANQ_DEV_API_KEY")
+# get_credits_summary(TITANQ_DEV_API_KEY)
 
 #fill in your own base_path
 base_path = os.getenv("BASE_PATH")
@@ -109,8 +108,6 @@ def TitanQFunc(nspins, alpha, weightsIsing, biasIsing, timeout, precision_param,
     #returns 1) Full state   2) Visible state    3) energy from titanQ   4) calculated Boltzmann energy  5) Samples taken 6) coupling constant, 7) precision of the sampling
     return full_output, visible_output, energy_output, energies_calculated, samps_taken,num_engines, num_chains, coupling_mult, str(myPrecision)
 
-
-
 async def magn_filt(nspins, alpha, timeout, nruns, precision_param):
     '''
     :param nspins:
@@ -148,23 +145,30 @@ async def magn_filt(nspins, alpha, timeout, nruns, precision_param):
         np.savetxt(f"{calc_path}/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv", TQ_states_filtered, delimiter=",")
         return TQ_states_filtered
 
-async def magn_filt_split(nspins, alpha, timeout, nruns, precision_param, split_bins):
+def magn_filt_split(nspins, alpha, timeout, nruns, precision_param, split_bins):
     """ To split the files into pieces of [split_bins] amount (4 in my case)
+    Needs to be executed in a forloop for nspins_ls, alpha_ls, timeout_ls (in order to go through all values)
+    Temporary functions to investigate accuracy and errorbars in plot of relErr vs UF in varEng
     :param nspins:
     :param alpha:
+    :param split_bins: the amount of bins you want to divide nruns by.
     :return: All the states with zero magnetization, the rest (non-zero) is filtered out.
     """
 
     TQ_states_filtered = []
-    for split_ind in range(0, split_bins): #ranging from 1 till 5 (1, 2, 3, 4)
+    for split_ind in range(split_bins): #ranging from 0 till 4 (0, 1, 2, 3)
 
-        # check if file exists already
+        # check if file exists already, if it doesn't: go on with calculation, otherwise, do nothing.
         if not os.path.isfile(f"{calc_path}/filt_states/precision_{precision_param}/split_states/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}_{split_ind + 1}of{split_bins}.csv"):
 
             #for indexing properly
             nruns_per_split = nruns / split_bins
+            #8 = 32 / 4, dit is het idee in ieder geval
 
-            for nruns_ind in range(split_ind * nruns_per_split, (split_ind + 1) * nruns_per_split):
+            range_begin = int(split_ind * nruns_per_split)
+            range_end = int((split_ind + 1) * nruns_per_split)
+
+            for nruns_ind in range(range_begin, range_end):
 
                 #opens one states file
                 states_path = f"{calc_path}/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout}/TQ_states_{nspins}_{alpha}_{timeout}_{nruns_ind + 1}.json"
@@ -180,12 +184,13 @@ async def magn_filt_split(nspins, alpha, timeout, nruns, precision_param, split_
 
 
         #save the states to a textfile
-    np.savetxt(f"{calc_path}/filt_states/precision_{precision_param}/split_states/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}_{split_ind + 1}of{split_bins}.csv", TQ_states_filtered, delimiter=",")
+        np.savetxt(f"{calc_path}/filt_states/precision_{precision_param}/split_states/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}_{split_ind + 1}of{split_bins}.csv", TQ_states_filtered, delimiter=",")
     return TQ_states_filtered
 
 
 
 # alpha_ls = [2,4]
+
 
 # print(TITANQ_DEV_API_KEY)
 # print(base_path)
