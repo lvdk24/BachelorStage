@@ -10,8 +10,8 @@ import json
 load_dotenv()
 
 #needed to use TitanQ
-# TITANQ_DEV_API_KEY = os.getenv("TITANQ_DEV_API_KEY")
-# get_credits_summary(TITANQ_DEV_API_KEY)
+TITANQ_DEV_API_KEY = os.getenv("TITANQ_DEV_API_KEY")
+get_credits_summary(TITANQ_DEV_API_KEY)
 
 #fill in your own base_path
 base_path = os.getenv("BASE_PATH")
@@ -155,9 +155,9 @@ def magn_filt_split(nspins, alpha, timeout, nruns, precision_param, split_bins):
     :return: All the states with zero magnetization, the rest (non-zero) is filtered out.
     """
 
-    TQ_states_filtered = []
-    for split_ind in range(split_bins): #ranging from 0 till 4 (0, 1, 2, 3)
 
+    for split_ind in range(split_bins): #ranging from 0 till 4 (0, 1, 2, 3)
+        TQ_states_filtered = []
         # check if file exists already, if it doesn't: go on with calculation, otherwise, do nothing.
         if not os.path.isfile(f"{calc_path}/filt_states/precision_{precision_param}/split_states/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}_{split_ind + 1}of{split_bins}.csv"):
 

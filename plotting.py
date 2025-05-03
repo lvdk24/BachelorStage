@@ -4,7 +4,7 @@ import matplotlib as mpl
 import h5py
 
 from TitanQ import base_path, calc_path, param_path, bonds_path
-from main import getVarEngVal, plotting, nspins_ls, alpha_ls, timeout_ls, precision_ls, load_engVal
+from main import getVarEngVal, nspins_ls, alpha_ls, timeout_ls, precision_ls, load_engVal, calcRelErr_vs_timeout
 
 plotting_diff_RBMEng = True
 plotting_UF_varEng = False
@@ -246,12 +246,58 @@ def make_relErr_vs_timeout_plot(nspins_ls, alpha, nruns):
     figcount += 1
     plt.show()
 
+def makePlot_relErr_vs_timeout_split_states(nspins_ls, alpha, timeout_ls,nruns, split_bins = 4):
+    figcount = 1
+    plt.figure(figcount)
+
+    #creating gradient in colours
+    def colorFader(c1, c2, mix=0):  # fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+        c1 = np.array(mpl.colors.to_rgb(c1))
+        c2 = np.array(mpl.colors.to_rgb(c2))
+        return mpl.colors.to_hex((1 - mix) * c1 + mix * c2)
+
+    #defining the two colours
+    c1 = 'red'  # blue
+    c2 = 'yellow'  # green
+
+    # relErr_arr = []
+    nspins_counter = 1
+
+    for nspins_ind in nspins_ls:
+        # for split_ind in range(split_bins):
+        relErr_arr = calcRelErr_vs_timeout(nspins_ind, alpha, timeout_ls, 32, 'high', True, 4)
+            #Hier moet nog de mean bij +stddev/errorbars van de split e
+            # relErr_arr.append(np.loadtxt(f"{calc_path}/accuracy/precision_high/relErr_vs_timeout/split_states/relErr_{nspins_ind}_{alpha}_{nruns}_{split_ind + 1}of{split_bins}.csv", delimiter = ","))
+
+        avg_relErr_arr = np.mean(relErr_arr, axis = 0)
+        stdev_relErr_arr = np.std(relErr_arr, axis = 0)
+        plt.errorbar(timeout_ls, avg_relErr_arr, yerr = stdev_relErr_arr, capsize = 6, color=colorFader(c1, c2, nspins_counter / len(nspins_ls)), label=f'n = {nspins_ind}')
+        nspins_counter += 1
+
+    # aesthetics
+    plt.xticks(timeout_ls)
+    plt.xlabel("timeout (s)")
+    plt.ylabel("Relative error")
+    plt.title(f"alpha={alpha}, nruns = {nruns}")
+    plt.legend()
+
+    # saving and showing the figure
+    plt.savefig(f"{calc_path}/accuracy/precision_high/relErr_vs_timeout_split_{alpha}_{nruns}.png", bbox_inches='tight')
+    figcount += 1
+    plt.show()
+
+
+
+
+
+
+
 
 
 # making distributions differences plots
-if plotting:
-    for alpha in alpha_ls:
-        make_relErr_vs_timeout_plot(nspins_ls, alpha, nruns=32)
+makePlot_relErr_vs_timeout_split_states(nspins_ls, 4, timeout_ls, 32, split_bins=4)
+# for alpha in alpha_ls:
+#     make_relErr_vs_timeout_plot(nspins_ls, alpha, nruns=32)
         # for nspins in nspins_ls:
         # make_relErr_vs_timeout_plot(nspins_ls, alpha, 8)
         #     make_RBMEng_diff_plot(nspins, alpha, 10, 8, 'standard')
@@ -261,7 +307,4 @@ if plotting:
     # make_RBMEng_diff_plot(64, 2, 60, 8)
     # make_RBMEng_diff_plot(64, 2, 10, 32)
     # make_varEng_diff_plot(36, 2, 10, 32)
-else:
-    print("Plotting is turned off")
-
 # make_RBMEng_diff_plot(16,2,10,8,'high')
