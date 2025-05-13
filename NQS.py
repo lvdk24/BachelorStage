@@ -1,12 +1,30 @@
 import numpy as np
 from tqdm import tqdm
+import json
+from numba import njit, jit
 
-def logWaveFunc(state, weights, bias):
-    weightedSum = state @ weights + bias
+from TitanQ import base_path, calc_path, param_path, bonds_path, TitanQFunc, magn_filt
+from Mask_2D import bias_map, generate_W_mask, weight_map_numba
+# from SideCalculations import fast_matmul
+# from main import varPar_to_Ising, getStates
+
+@njit
+def logWaveFunc(state, weightsRBM, biasRBM):
+
+    weightedSum_matmult = state @ weightsRBM
+    weightedSum = weightedSum_matmult + biasRBM  #  = θ
     activation = 2 * np.cosh(weightedSum)
-    return 0.5*np.sum(np.log(activation), axis=0).item()
 
-def getFullVarPar(weightsIndep, biasIndep):
+    # weightedSum = state @ weights + bias
+    # N, M = weightsRBM.shape()
+    # r, N = state.shape()
+    # weightedSum = np.zeros((r, M)) #C in fast_matmul
+    # fast_matmul(state, weightsRBM, weightedSum)
+    # activation = 2 * np.cosh(weightedSum)
+
+    return 0.5 * np.sum(np.log(activation), axis=0).item(), weightedSum, activation#, weightedSum_fast
+
+def getFullVarPar_1D(weightsIndep, biasIndep):
     ''' Get the full set of variational parameters from the independent set of parameters.
         This is for 1D chain.
     Args:
@@ -31,6 +49,36 @@ def getFullVarPar(weightsIndep, biasIndep):
 
     return weightsFull, weightsMask, biasFull, biasMask
     #mask geeft true false terug op de plekken in de matrix
+
+def getFullVarPar_2D(W_ind, b_ind, nspins, alpha):
+    """
+    Compute the full variational parameters for a square lattice
+
+    W_ind - shape: (N,alpha)
+    b_ind - shape: (alpha,)
+
+    Return:
+    ------
+    W - shape: (N,M)
+    W_mask - (N,M)
+    b - (M,)
+    b_mask - (M,)
+    """
+    Lx = Ly = int(np.sqrt(nspins))
+    M = nspins * alpha
+
+    # create the index maps
+    weight_map_var = weight_map_numba(Lx, Ly, alpha).T  # Weight map shape: (M,N), so transpose is (N,M)
+    bias_map_var = bias_map(nspins, alpha)  # shape: (M,)
+
+    weightsFull = W_ind.flatten()[weight_map_var]
+    weightsMask = generate_W_mask(Lx, Ly, alpha)
+
+    biasFull = b_ind[bias_map_var]
+
+    biasMask = np.array([1 if i % nspins == 0 else 0 for i in range(M)]).astype(np.bool_)
+
+    return weightsFull, weightsMask, biasFull, biasMask
 
 def nextStateMC(state, weights, bias):
     """ Generate the next state in the Markov chain using the metropolis-hasing algorithm
@@ -64,10 +112,10 @@ def nextStateMC(state, weights, bias):
         newState[randomIndices] *= -1
 
         # get psi_M of the new state
-        psi_pre = logWaveFunc(selState, weights, bias)
+        psi_pre = logWaveFunc(selState, weights, bias)[0]
 
         # get psi of old state
-        psi_post = logWaveFunc(newState, weights, bias)
+        psi_post = logWaveFunc(newState, weights, bias)[0]
 
         # selection rule
         if np.random.random() < np.exp(2 * (psi_post - psi_pre)):
@@ -112,7 +160,79 @@ def genBonds(N,pbc = True):
     # return the lattice
     return lattice
 
-def calcLocEng(state, bonds, weights, bias):
+def genBonds_2D(nspins, pbc=True):
+    """ Assume minimal nspins is 16
+
+    :param nspins:
+    :param pbc:
+    :return:
+    """
+    # normal lattice sites
+    length = int(np.sqrt(nspins))
+
+    working_length = length
+    begin = 0
+    lattice = []
+    hor_lat = []
+    ver_lat = []
+    pbc_lat = []
+
+    # horizontale bonds
+    for row_ind in range(length):
+
+
+        next_row_lattice = [[i, (i + 1)] for i in range(begin, working_length - 1)]
+
+        # all bonds are the same but translated
+        begin += length
+        working_length += length
+
+        hor_lat += next_row_lattice
+
+    working_length = length
+    begin = 0
+    # verticale bonds
+    for col_ind in range(length):
+
+        # adjust the stepsize here
+        next_col_lattice = [[i, (i + length)] for i in range(begin, nspins - length, length)]
+
+        begin += 1
+
+        ver_lat += next_col_lattice
+
+
+    begin = 0
+    # working_length = length
+    # periodic boundary conditions
+    if pbc:
+
+        # horizontal pbc
+        for i in range(begin, nspins - (length - 1), length):
+            pbc_lat += [[i, (i + length - 1)]]
+
+        # vertical pbc
+        for i in range(begin, length):
+
+            pbc_lat += [[i, (i + nspins - length)]]
+
+            begin += 1
+
+    lattice += hor_lat
+    lattice += ver_lat
+    lattice += pbc_lat
+    return lattice
+
+def calcLocEng(state, alpha, bonds, weights, bias):
+    """
+
+    :param state:
+    :param alpha: not used here, but staying consistent with the calcLocEng_new.
+    :param bonds:
+    :param weights:
+    :param bias:
+    :return:
+    """
     locEng = 0
     for bond in bonds:
         locEng += state[bond[0]] * state[bond[1]]
@@ -120,71 +240,140 @@ def calcLocEng(state, bonds, weights, bias):
             flippedState = state.copy()
             flippedState[bond[0]] *= -1
             flippedState[bond[1]] *= -1
-            locEng -= 2 * np.exp(logWaveFunc(flippedState, weights, bias) - logWaveFunc(state, weights, bias))
+            locEng -= 2 * np.exp(logWaveFunc(flippedState, weights, bias)[0] - logWaveFunc(state, weights, bias)[0])
     return locEng
 
+@njit
+def calcLocEng_new(state, alpha, bonds, weightsRBM, biasRBM):
+    """ Faster way (w.r.t. calcLocEng) of calculating the local energy (and therefore the variational energy)
+    :param state:
+    :param alpha:
+    :param bonds:
+    :param weightsRBM:
+    :param biasRBM:
+    :return:
+    """
+
+    locEng = 0
+    nspins = len(state)
+    RBMEng, weightedSum, _ = logWaveFunc(state, weightsRBM, biasRBM)
+    weights_transposed = weightsRBM.transpose() #dit werkt nog niet, maar zoiets zou het moeten zijn
+
+    for bond in bonds:
+        # flipSum = []
+        locEng += state[bond[0]] * state[bond[1]]
+
+        if state[bond[0]] != state[bond[1]]:
+
+            flipSum = []
+            for i in range(nspins * alpha):
+                flipSum.append(2 * weights_transposed[i][bond[0]] * state[bond[0]] + 2 * weights_transposed[i][bond[1]] * state[bond[1]]) #ik denk dat deze indexering niet goed is
+                # i gaat van 1 t/m M = nspins x alpha
+                # dus dan moet de eerste dimensie dat ook zijn
+                # tweede index vd weights gaat over de spinflip, die moet dus t/m nspins lopen
+
+
+
+            weightedSum_new = weightedSum - np.array(flipSum)
+            activation_new = 2 * np.cosh(weightedSum_new)
+            RBMEng_new = 0.5*np.sum(np.log(activation_new))
+
+            locEng -= 2 * np.exp(RBMEng_new - RBMEng)
+    return locEng
+
+# weightedSum is een matrix van lengte nspins*alpha
+# weightedSum gaat over de hele state
+# flipSum moet dan ook een array zijn die de weightedSum aanpast naar weightedSum_new
 
 def stochReconfig(weightsIndep, biasIndep, bonds, state, N_s: int = 1000, N_th: int = 100, reg: float = 1e-4):
     """ Compute the gradients used to update the RBM
 
-    Args:
-        W_ind (np.ndarray): the independent set of weights shape=(N, alpha)
-        b_ind (np.ndarray): the independent set of biases shape(alpha)
-        bonds (list[tuple[int, int]]): the bonds
-        N_s (int, optional): the number of samples in your Monte Carlo sweep, default 2000. --> needs to be updated to the amount of (filtered) samples received from TitanQ.
-        N_th (int, optional): the number of thermalization steps, default 200.
-        reg (float, optional): a regularization term for the inversion of the S_kk matrix, default 1e-4.
+    :param weightsIndep: the independent set of weights shape=(N, alpha)
+    :param biasIndep: the independent set of biases shape(alpha)
+    :param bonds:
+    :param state: can be one state (array) or multiple (matrix)
+    :param N_s: amount of samples, needs to be calculated if used in training
+    :param N_th: thermalisation, not used when TitanQ is used for smapling
+    :param reg: regularization erm for the inversion of the S_kk matrix, default 1e-4.
+    :return: tuple[np.ndarray, np.ndarray, float]: returns the gradients for the independent weights, gradients for the independent biases, and the Energy per spin
 
-    Return:
-        tuple[np.ndarray, np.ndarray, float]: returns the gradients for the independent weights, gradients for the independent biases, and the Energy per spin
+    When used for training, an array of states will be used as input
     """
 
-    N, alpha = weightsIndep.shape
-    weights, weightsMask, bias, biasMask = getFullVarPar(weightsIndep, biasIndep)
+    nspins, alpha = weightsIndep.shape
+    weights, weightsMask, bias, biasMask = getFullVarPar_2D(weightsIndep, biasIndep, nspins, alpha)
 
-    expVal_obsk = np.zeros(alpha * (N + 1))
-    expVal_obsk_obsk = np.zeros((alpha * (N + 1), alpha * (N + 1)))
+    sampleSize = len(state) # dimension of one sample is nspins
+    print(f"len state = samplesize = {sampleSize}")
+
+    expVal_obsk = np.zeros(alpha * (nspins + 1))
+    expVal_obsk_obsk = np.zeros((alpha * (nspins + 1), alpha * (nspins + 1)))
     expVal_locEng = 0
-    expVal_locEng_obsk = np.zeros(alpha * (N + 1))
+    expVal_locEng_obsk = np.zeros(alpha * (nspins + 1))
 
     # state, acceptance = thermalisation(N_th, weights, bias)
+
+    # only useful when not using samples from TitanQ
     # for _ in range(N_s):
         # state, acc, rej = nextStateMC(state, weights, bias)
+
     weightedSum = state @ weights + bias
-    obsk = np.zeros(alpha * (N + 1))
-    obsk[: alpha * N] = np.outer(state, np.tanh(weightedSum))[weightsMask]
-    obsk[alpha * N:] = np.tanh(weightedSum)[biasMask]
+    obsk = np.zeros(alpha * (nspins + 1))
+    obsk[: alpha * nspins] = np.outer(state, np.tanh(weightedSum))[weightsMask]
+    obsk[alpha * nspins:] = np.tanh(weightedSum)[biasMask]
 
-    locEng = calcLocEng(state, bonds, weights, bias)
+    locEng = calcLocEng(state, alpha, bonds, weights, bias)
 
-    expVal_obsk += obsk / N_s
-    expVal_obsk_obsk += np.outer(obsk, obsk) / N_s
-    expVal_locEng += locEng / N_s
-    expVal_locEng_obsk += locEng * obsk / N_s
+    expVal_obsk += obsk / sampleSize
+    expVal_obsk_obsk += np.outer(obsk, obsk) / sampleSize
+    expVal_locEng += locEng / sampleSize
+    expVal_locEng_obsk += locEng * obsk / sampleSize
 
-    S_kk_inv = np.linalg.inv((expVal_obsk_obsk - np.outer(expVal_obsk, expVal_obsk)) + np.eye(alpha * (N + 1)) * reg)
+    S_kk_inv = np.linalg.inv((expVal_obsk_obsk - np.outer(expVal_obsk, expVal_obsk)) + np.eye(alpha * (nspins + 1)) * reg)
     Fk = expVal_locEng_obsk - expVal_locEng * expVal_obsk
 
     grad = S_kk_inv @ Fk
     # print(f"grad: {grad}")
-    return grad[:alpha * N].reshape(N, alpha), grad[alpha * N:], expVal_locEng, expVal_locEng / (4 * N)
+    return grad[:alpha * nspins].reshape(nspins, alpha), grad[alpha * nspins:], expVal_locEng, expVal_locEng / (4 * nspins)
+
+# def training_loop_old(
+#     N: int,
+#     alpha: int,
+#     epoch: int = 25,
+#     lr: float = 1e-3
+# ):
+#     """ Training loop
+#
+#     Args:
+#         N (int): the number of spins inside the 1D Heisenberg spin chain
+#         alpha (int): alpha
+#         epoch (int, optional): the number of epochs, default 25.
+#         lr (int, optional): the learning rate, default 1e-3.
+#     """
+#     # initialize the independent weights and biases
+#     weightsIndep = np.random.normal(scale=1e-4, size=(N, alpha))
+#     biasIndep = np.random.normal(scale=1e-4, size=(alpha))
+#
+#     # setup the bonds
+#     bonds = genBonds(N)
+#
+#     pbar = tqdm(range(epoch))
+#     varEngVal_arr = np.zeros(epoch)
+#
+#     # do epoch epochs
+#     for i in pbar:
+#         weightsGrad, biasGrad, E = stochReconfig(weightsIndep, biasIndep, bonds)
+#         varEngVal_arr[i] = E
+#
+#         # update the independent variational parameters
+#         weightsIndep -= lr * weightsGrad
+#         biasIndep -= lr * biasGrad
+#         pbar.set_description(f"E_var = {E}")
+#
+#     # return the variational parameters and the variational energy per epoch
+#     return weightsIndep, biasIndep, varEngVal_arr
 
 
-def trainingLoop(N, alpha, state, epoch: int = 25, lr: float = 1e-3):
-    weightsIndep = np.random.normal(scale=1e-4, size=(N, alpha))
-    biasIndep = np.random.normal(scale=1e-4, size=(alpha))
-
-    bonds = genBonds(N)
-
-    varEngVal_arr = np.zeros(epoch)
-    for i in tqdm(range(epoch)):
-        weightsGrad, biasGrad, _, varEngVal = stochReconfig(weightsIndep, biasIndep, bonds,state)
-        varEngVal_arr[i] = varEngVal
-        # print(f"w_grad: {w_grad}")
-        weightsIndep -= lr * weightsGrad
-        biasIndep -= lr * biasGrad
-        tqdm(range(epoch)).set_description(f"E_var = {varEngVal}")
-    return weightsIndep, biasIndep, varEngVal_arr, varEngVal
 
 #
 # weightsIndep = np.random.normal(scale=1e-4, size=(14, 10))
