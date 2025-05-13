@@ -8,7 +8,7 @@ from Mask_2D import bias_map, generate_W_mask, weight_map_numba
 # from SideCalculations import fast_matmul
 # from main import varPar_to_Ising, getStates
 
-@njit
+# @njit
 def logWaveFunc(state, weightsRBM, biasRBM):
 
     weightedSum_matmult = state @ weightsRBM
@@ -302,9 +302,11 @@ def stochReconfig(weightsIndep, biasIndep, bonds, state, N_s: int = 1000, N_th: 
 
     nspins, alpha = weightsIndep.shape
     weights, weightsMask, bias, biasMask = getFullVarPar_2D(weightsIndep, biasIndep, nspins, alpha)
+    # print(f" weightsmask: {weightsMask}")
+    # print(f"biasmask: {biasMask}")
 
     sampleSize = len(state) # dimension of one sample is nspins
-    print(f"len state = samplesize = {sampleSize}")
+    # print(f"len state = samplesize = {sampleSize}")
 
     expVal_obsk = np.zeros(alpha * (nspins + 1))
     expVal_obsk_obsk = np.zeros((alpha * (nspins + 1), alpha * (nspins + 1)))

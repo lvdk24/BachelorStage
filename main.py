@@ -11,7 +11,7 @@ import json
 import asyncio
 
 from TitanQ import TitanQFunc, load_weights_and_bias, base_path, calc_path, param_path, bonds_path, boltzmann_energy, magn_filt, magn_filt_split, magn_filt_ratio
-from NQS import stochReconfig, calcLocEng, calcLocEng_new, logWaveFunc, genBonds_2D
+from NQS import stochReconfig, calcLocEng, calcLocEng_new, logWaveFunc, genBonds_2D, getFullVarPar_2D
 
 nspins_ls = [16,36,64,100,196,324,484]
 alpha_ls = [2,4]
@@ -192,15 +192,15 @@ def getVarEngVal(nspins, alpha, timeout, nruns, ising_params_id, precision_param
     :return: returns array with variational energy from 512 * nruns states. To compare to varEng distribution from UltraFast.
     '''
 
-    #check if file already exists.
+    # check if file already exists.
     if not os.path.isfile(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv"):
         TQ_filt_states = np.loadtxt(f"{calc_path}/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv", delimiter = ",")
 
-        #get the ising parameters and transform to RBM parameters
+        # get the ising parameters and transform to RBM parameters
         weightsIsing, biasIsing = load_weights_and_bias(nspins, alpha, ising_params_id)
         weightsRBM, biasRBM = varPar_to_RBM(weightsIsing, biasIsing, nspins, alpha)
 
-        #get corresponding lattice bonds
+        # get corresponding lattice bonds
         with open(f'{bonds_path}/bonds_python/all_bonds_{nspins}.json', 'r') as file:
             bonds = json.load(file)
 
@@ -407,7 +407,7 @@ def calcRelErr_vs_nspins(nspins_ls, alpha, timeout, nruns, precision_param):
 #
 #     return distance_JS
 
-def trainingLoop_TQ(nspins, alpha, nruns = 1, timeout = 2, precision_param = 'high', epoch: int = 10, lr: float = 1e-3):
+def trainingLoop_TQ(nspins, alpha, nruns = 26, timeout = 2, precision_param = 'high', epoch: int = 10, lr: float = 1e-3):
     """
 
     :param nspins:
@@ -415,25 +415,26 @@ def trainingLoop_TQ(nspins, alpha, nruns = 1, timeout = 2, precision_param = 'hi
     :param nruns: ~2000 samples: magnFiltRatio ~ 0.15, 512 states per run, 2000/(0.15 * 512) = 26
     :param timeout:
     :param precision_param:
-    :param epoch:
+    :param epoch: amount of training runs
     :param lr:
-    :return:
+    :return: variational energy array of all states
     """
 
     # initialise random RBM parameters
-    weightsIndep = np.random.normal(scale=1e-12, size=(nspins, alpha * nspins))
-    biasIndep = np.random.normal(scale=1e-12, size=(alpha * nspins))
+    weightsIndep = np.random.normal(scale=1e-4, size=(nspins, alpha))
+    biasIndep = np.random.normal(scale=1e-4, size=(alpha))
 
-    # convert to Ising parameters
-    weightsIsing, biasIsing = varPar_to_Ising(weightsIndep, biasIndep)
+    # get the full weights and biases and convert them to Ising parameters (for use with TitanQ)
+    weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsIndep, biasIndep, nspins, alpha)
+    weightsIsing, biasIsing = varPar_to_Ising(weightsFull, biasFull)
 
     # for systems up to 22x22 = 484, use existing files
     bonds = genBonds_2D(nspins)
 
-    # array to keep track of evolution of variational energy over the training loop
-    varEngVal_evolution_arr = []
-
     for i in tqdm(range(epoch)):
+        # array to keep track of evolution of variational energy over the training loop, supposed to be array of arrays
+        varEngVal_evolution_arr = []
+        varEngVal_arr = []
 
         # this needs to happen every new epoch
         # get array of visible states from TitanQ
@@ -447,20 +448,25 @@ def trainingLoop_TQ(nspins, alpha, nruns = 1, timeout = 2, precision_param = 'hi
         TQ_states_filtered = magn_filt(nspins, alpha, timeout, nruns, precision_param, TQ_visStates, True)
         # print(f"length of filtered states {len(TQ_states_filtered)}")
 
-        # SR, but with size of len(TQ_states_filtered) = mz
-        weightsGrad, biasGrad, _, varEngVal = stochReconfig(weightsIndep, biasIndep, bonds, TQ_states_filtered)
+        # SR
+        for filt_state_ind in range(len(TQ_states_filtered)):
+            weightsGrad, biasGrad, _, varEngVal = stochReconfig(weightsIndep, biasIndep, bonds, TQ_states_filtered[filt_state_ind])
+            # print(f"wG: {filt_state_ind},  {weightsGrad} ")
+            varEngVal_arr.append(varEngVal)
+        # weightsGrad, biasGrad, _, varEngVal_arr = stochReconfig(weightsIndep, biasIndep, bonds, TQ_states_filtered)
 
         # parameter update
-        weightsIndep -= lr * weightsGrad # these weights should be a 3-dimensional matrix of mz x nspins x alpha
-        biasIndep -= lr * biasGrad # bias should be of size mz x alpha
+        weightsIndep -= lr * weightsGrad
+        biasIndep -= lr * biasGrad
 
         # transform the weights so they can be used by TitanQ again.
-        weightsIsing, biasIsing = varPar_to_Ising(weightsIndep, biasIndep)
+        weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsIndep, biasIndep, nspins, alpha)
+        weightsIsing, biasIsing = varPar_to_Ising(weightsFull, biasFull)
 
-        varEngVal_evolution_arr.append(varEngVal)
+        varEngVal_evolution_arr.append(varEngVal_arr)
 
     # save evolution of variational energy over the epochs to .txt file
-    np.savetxt(f"{calc_path}/varEng/varEng_training_evolution/varEng_evolution_{nspins}_{alpha}_{epoch}", varEngVal_evolution_arr, delimiter=",")
+        np.savetxt(f"{calc_path}/varEng/varEng_training_evolution/varEng_evolution_{nspins}_{alpha}_{i+1}of{epoch}.csv", varEngVal_evolution_arr, delimiter=",")
     return varEngVal, weightsIndep, biasIndep, epoch
 
 print(trainingLoop_TQ(16, 2))

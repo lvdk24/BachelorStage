@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import h5py
+import glob
 
 from TitanQ import base_path, calc_path, param_path, bonds_path, magn_filt_ratio
 from main import getVarEngVal, nspins_ls, alpha_ls, timeout_ls, precision_ls, load_engVal, calcRelErr_vs_timeout, trainingLoop_TQ
@@ -352,15 +353,38 @@ def makePlot_magn_filt_ratio(nspins_ls, alpha, timeout_ls, nruns, precision_para
     plt.show()
 
 def makePlot_training_varEng(nspins, alpha):
-    varEngVal, varEngVal_arr, _, _, epoch = trainingLoop_TQ(nspins, alpha)
+    # check how many files of this configuration exist already
+    list_of_files = glob.glob(
+        f"{calc_path}/varEng/varEng_training_evolution/*.csv")
 
-    x_val = np.arange(epoch)
+    epochs = len(list_of_files)
 
-    plt.figure()
-    plt.plot(x_val, varEngVal_arr)
-    plt.axhline(varEngVal)
+    # varEngVal, varEngVal_arr, _, _, epoch = trainingLoop_TQ(nspins, alpha)
 
-    plt.show()
+    # x_val = np.arange(epochs)
+
+    for epoch_ind in range(epochs):
+        varEngVal_arr = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/varEng_evolution_{nspins}_{alpha}_{epoch_ind+1}of{epochs}.csv", delimiter=",")
+        figcount = 1
+        plt.figure(figcount)
+
+        hist_varEng_Evo_TQ, bins_varEng_Evo_TQ = np.histogram(varEngVal_arr, bins=60, density=True)
+        hist_varEng_Evo_TQ = hist_varEng_Evo_TQ / np.sum(hist_varEng_Evo_TQ)
+        # plt.axhline(varEngVal)
+
+        plt.step((bins_varEng_Evo_TQ[:-1] + bins_varEng_Evo_TQ[1:]) / 2, hist_varEng_Evo_TQ, color='blue',)
+
+        myTitle = f"Variational energy, epoch = {epoch_ind + 1}"
+        plt.xlabel("Variational Energy")
+        plt.ylabel("Probability")
+        # plt.legend(loc="upper right")
+        plt.title(myTitle, loc='center', wrap=True)
+        plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEng_Evo_{epoch_ind + 1}of{epochs}.png")
+        figcount += 1
+
+        plt.show()
+
+# makePlot_training_varEng(16,2)
 
 # makePlot_training_varEng(16, 2)
 
