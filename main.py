@@ -407,7 +407,7 @@ def calcRelErr_vs_nspins(nspins_ls, alpha, timeout, nruns, precision_param):
 #
 #     return distance_JS
 
-def trainingLoop_TQ(nspins, alpha, nruns = 26, timeout = 2, precision_param = 'high', epoch: int = 10, lr: float = 1e-3):
+def trainingLoop_TQ(nspins, alpha, nruns = 26, timeout = 2, precision_param = 'high', epoch: int = 300, lr: float = 1e-3):
     """
 
     :param nspins:
