@@ -426,7 +426,7 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
 
 # makePlot_hist_training_varEng(16,2,10)
 
-# makePlot_training_varEngVal(16,4,10)
+# makePlot_training_varEngVal(36,2,300)
 
 
 # makePlot_training_varEngVal(16,2,100)

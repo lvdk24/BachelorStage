@@ -554,7 +554,7 @@ def some_func(n, a, ip_id):
 
 
 
-trainingLoop_TQ(36, 2, 300)
+trainingLoop_TQ(36, 4, 300)
 
 
 
