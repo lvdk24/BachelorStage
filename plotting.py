@@ -396,11 +396,11 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
 
 
     varEngval_Evo_arr = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", delimiter=",")
-
+    # varEng_evolution_16_2_100
 
 
     plt.figure()
-    x = np.arange(epoch_runs)
+    x = np.arange(epochs)
 
     plt.plot(x, varEngval_Evo_arr)
 
@@ -415,7 +415,7 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
 
 # makePlot_hist_training_varEng(16,2,10)
 
-# makePlot_training_varEngVal(16,2,10)
+# makePlot_training_varEngVal(16,2,100)
 
 
 # makePlot_training_varEngVal(16,2,100)

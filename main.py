@@ -450,9 +450,9 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 26, timeout = 2, precis
     # weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins, alpha)
 
     bonds = genBonds_2D(nspins)
-
+    varEngVal_arr = []
     for i in tqdm(range(epochs)):
-        varEngVal_arr = []
+
         # this needs to happen every new epoch
         # get array of visible states from TitanQ
         _, TQ_visStates_oneRow, _, _, _, _, _, _, _ = TitanQFunc(nspins, alpha, weightsIsing, biasIsing, timeout, precision_param)
