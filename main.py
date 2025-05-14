@@ -430,7 +430,7 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 26, timeout = 2, precis
     :return: variational energy array of all states
     """
     # checking and creating a new directory
-    storeVal_path = f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}"
+    storeVal_path = f"{calc_path}/varEng/varEng_training_evolution/"
 
 
     # if os.path.isfile(storeVal_path):

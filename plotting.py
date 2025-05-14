@@ -394,9 +394,9 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
 
     # x_val = np.arange(epochs)
 
-    for epoch_ind in tqdm(range(epoch_runs)):
-        varEngVal = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/varEng_evolution_{nspins}_{alpha}_{epoch_ind+1}of{epochs}.csv", delimiter=",")
-        varEngval_Evo_arr.append(varEngVal)
+
+    varEngval_Evo_arr = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", delimiter=",")
+
 
 
     plt.figure()
