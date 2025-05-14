@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import h5py
 import glob
+from tqdm import tqdm
 
 from TitanQ import base_path, calc_path, param_path, bonds_path, magn_filt_ratio
 from main import getVarEngVal, nspins_ls, alpha_ls, timeout_ls, precision_ls, load_engVal, calcRelErr_vs_timeout, trainingLoop_TQ
@@ -194,8 +195,6 @@ def makePlot_varEng_differentCalculation(nspins, alpha, timeout, nruns, precisio
     figcount += 1
     plt.show()
 
-# makePlot_varEng_differentCalculation(36,2,2,32,'high')
-
 def make_varEng_diff_prec_plot(nspins, alpha, timeout, nruns, precision_ls):
     figcount = 1
     # getting histogram values from TitanQ
@@ -352,19 +351,18 @@ def makePlot_magn_filt_ratio(nspins_ls, alpha, timeout_ls, nruns, precision_para
     figcount += 1
     plt.show()
 
-def makePlot_training_varEng(nspins, alpha):
+def makePlot_hist_training_varEng(nspins, alpha, epochs):
     # check how many files of this configuration exist already
-    list_of_files = glob.glob(
-        f"{calc_path}/varEng/varEng_training_evolution/*.csv")
+    list_of_files = glob.glob(f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/*.csv")
 
-    epochs = len(list_of_files)
+    epoch_runs = len(list_of_files)
 
     # varEngVal, varEngVal_arr, _, _, epoch = trainingLoop_TQ(nspins, alpha)
 
     # x_val = np.arange(epochs)
 
-    for epoch_ind in range(epochs):
-        varEngVal_arr = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/varEng_evolution_{nspins}_{alpha}_{epoch_ind+1}of{epochs}.csv", delimiter=",")
+    for epoch_ind in range(epoch_runs):
+        varEngVal_arr = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/varEng_evolution_{nspins}_{alpha}_{epoch_ind+1}of{epochs}.csv", delimiter=",")
         figcount = 1
         plt.figure(figcount)
 
@@ -384,108 +382,50 @@ def makePlot_training_varEng(nspins, alpha):
 
         plt.show()
 
-# makePlot_training_varEng(16,2)
+def makePlot_training_varEngVal(nspins, alpha, epochs):
 
+    # check how many files of this configuration exist
+    list_of_files = glob.glob(
+        f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/*.csv")
+
+    epoch_runs = len(list_of_files)
+
+    varEngval_Evo_arr = []
+
+    # x_val = np.arange(epochs)
+
+    for epoch_ind in tqdm(range(epoch_runs)):
+        varEngVal_arr = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/varEng_evolution_{nspins}_{alpha}_{epoch_ind+1}of{epochs}.csv", delimiter=",")
+        print(varEngVal_arr[0])
+        varEngval_Evo_arr.append(varEngVal_arr[0])
+
+
+    plt.figure()
+    x = np.arange(epoch_runs)
+
+    plt.plot(x, varEngval_Evo_arr)
+
+    myTitle = f"Variational energy, n={nspins}, "+ r"$\alpha$" +f"={alpha}, " + "epochs={epochs}"
+    plt.xlabel("epoch")
+    plt.ylabel("Variational Energy")
+    # plt.legend(loc="upper right")
+    plt.title(myTitle, loc='center', wrap=True)
+    plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEngVal_Evo_{nspins}_{alpha}_{epochs}.png")
+
+    plt.show()
+
+# makePlot_hist_training_varEng(16,2,10)
+
+# makePlot_training_varEngVal(16,2,10)
+
+
+# makePlot_training_varEngVal(16,2,100)
 # makePlot_training_varEng(16, 2)
-
-# def UF_varEng_dist_comp(nspins, alpha, timeout, nruns, precision_param):
-#
-#     # loading energy values
-#     _,_,_,varEngVal_UF,_ = load_engVal(nspins, alpha, timeout, nruns, precision_param)
-#
-#     fig = plt.figure()
-#     ax = fig.add_subplot(projection='3d')
-#
-#     def colorFader(c1, c2, mix=0):  # fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
-#         c1 = np.array(mpl.colors.to_rgb(c1))
-#         c2 = np.array(mpl.colors.to_rgb(c2))
-#         return mpl.colors.to_hex((1 - mix) * c1 + mix * c2)
-#
-#     # defining the two colours
-#     c1 = 'red'  # blue
-#     c2 = 'yellow'  # green
-#
-#
-#     # colors = ['r', 'g', 'b', 'y']
-#     yticks = np.linspace(1,32,32)
-#     for eng_ind in range(len(yticks)):
-#         # Generate the random data for the y=k 'layer'.
-#         xs = varEngVal_UF[eng_ind]
-#         # ys = np.random.rand(20)
-#         # You can provide either a single color or an array with the same length as
-#         # xs and ys. To demonstrate this, we color the first bar of each set cyan.
-#         # cs = [c] * len(xs)
-#         # cs[0] = 'c'
-#
-#         # Plot the bar graph given by xs and ys on the plane y=k with 80% opacity.
-#         # ax.bar(xs, ys, zs=k, zdir='y', color=cs, alpha=0.8)
-#         hist_varEng_UF, binsUF = np.histogram(varEngVal_UF, bins=60, density=True)
-#         hist_varEng_UF = hist_varEng_UF / np.sum(hist_varEng_UF)
-#         plt.bar(binsUF[:-1], hist_varEng_UF, width=np.diff(binsUF), alpha=0.6, color=colorFader(c1, c2, eng_ind / len(varEngVal_UF)),
-#                 edgecolor="black", label="UF")
-#
-#     ax.set_xlabel('X')
-#     ax.set_ylabel('Y')
-#     ax.set_zlabel('Z')
-#
-#     # On the y-axis let's only label the discrete values that we have data for.
-#     ax.set_yticks(yticks)
-#
-#     plt.show()
-#
 
 
 # Fixing random state for reproducibility
 
-# def UF_varEng_dist_comp(nspins, alpha, timeout, nruns, precision_param):
-#     # np.random.seed(19680801)
-#     figcount = 1
-#     # loading energy values
-#     _,_,_,varEngVal_UF,_ = load_engVal(nspins, alpha, timeout, nruns, precision_param)
-#     varEng_1 = varEngVal_UF[0]
-#     varEng_2 = varEngVal_UF[1]
-#
-#     fig = plt.figure(figcount)
-#     ax = fig.add_subplot(projection='3d')
-#
-#     colors = ['r']#, 'g', 'b', 'y']
-#     yticks = [1, 2]#, 1, 0]
-#     for c, k in zip(colors, yticks):
-#         # Generate the random data for the y=k 'layer'.
-#         # xs = np.arange(20)
-#         # ys = np.random.rand(20)
-#         hist_varEng_UF, binsUF = np.histogram(varEngVal_UF, bins=60, density=True)
-#         hist_varEng_UF = hist_varEng_UF / np.sum(hist_varEng_UF)
-#
-#         # starting figure
-#         # plt.figure(figcount)
-#
-#         plt.bar(binsUF[:-1], hist_varEng_UF, width=np.diff(binsUF), alpha=0.6, color='yellow',edgecolor="black", label="UF")
-#
-#
-#         # You can provide either a single color or an array with the same length as
-#         # xs and ys. To demonstrate this, we color the first bar of each set cyan.
-#         cs = [c] * len(hist_varEng_UF)
-#         cs[0] = 'c'
-#
-#         # Plot the bar graph given by xs and ys on the plane y=k with 80% opacity.
-#         # plt.bar(hist_varEng_UF, binsUF[:-1], zs=k, zdir='y', color=cs, alpha=0.8)
-#         figcount += 1
-#     ax.set_xlabel('X')
-#     ax.set_ylabel('Y')
-#     ax.set_zlabel('Z')
-#
-#     # On the y-axis let's only label the discrete values that we have data for.
-#     ax.set_yticks(yticks)
-#
-#     plt.show()
-
-
-# UF_varEng_dist_comp(16,2,10,32,'high')
-
-
-
-
+# def UF_varEng_dist_comp(nspins, alpha, timeout, nruns, precision_param)
 
 # making distributions differences plots
 

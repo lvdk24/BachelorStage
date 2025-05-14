@@ -177,9 +177,8 @@ def genBonds_2D(nspins, pbc=True):
     ver_lat = []
     pbc_lat = []
 
-    # horizontale bonds
+    # horizontal bonds
     for row_ind in range(length):
-
 
         next_row_lattice = [[i, (i + 1)] for i in range(begin, working_length - 1)]
 
@@ -189,7 +188,6 @@ def genBonds_2D(nspins, pbc=True):
 
         hor_lat += next_row_lattice
 
-    working_length = length
     begin = 0
     # verticale bonds
     for col_ind in range(length):
@@ -201,9 +199,8 @@ def genBonds_2D(nspins, pbc=True):
 
         ver_lat += next_col_lattice
 
-
     begin = 0
-    # working_length = length
+
     # periodic boundary conditions
     if pbc:
 
@@ -243,7 +240,7 @@ def calcLocEng(state, alpha, bonds, weights, bias):
             locEng -= 2 * np.exp(logWaveFunc(flippedState, weights, bias)[0] - logWaveFunc(state, weights, bias)[0])
     return locEng
 
-@njit
+# @njit
 def calcLocEng_new(state, alpha, bonds, weightsRBM, biasRBM):
     """ Faster way (w.r.t. calcLocEng) of calculating the local energy (and therefore the variational energy)
     :param state:
@@ -281,17 +278,17 @@ def calcLocEng_new(state, alpha, bonds, weightsRBM, biasRBM):
             locEng -= 2 * np.exp(RBMEng_new - RBMEng)
     return locEng
 
-# weightedSum is een matrix van lengte nspins*alpha
-# weightedSum gaat over de hele state
-# flipSum moet dan ook een array zijn die de weightedSum aanpast naar weightedSum_new
-
-def stochReconfig(weightsIndep, biasIndep, bonds, state, N_s: int = 1000, N_th: int = 100, reg: float = 1e-4):
+def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, state, alpha, sampleSize, N_th: int = 100, reg: float = 1e-4):
     """ Compute the gradients used to update the RBM
 
-    :param weightsIndep: the independent set of weights shape=(N, alpha)
-    :param biasIndep: the independent set of biases shape(alpha)
-    :param bonds:
-    :param state: can be one state (array) or multiple (matrix)
+    :param weightsFull: the independent set of weights shape=(N, alpha)
+    :param weightsMask: the independent set of weights shape=(N, alpha)
+    :param biasFull: the independent set of weights shape=(N, alpha)
+    :param biasMask: the independent set of biases shape(alpha)
+    :param bonds: 2D bonds
+    :param state: one state (array) of spins (-1,1)
+    :param alpha: hidden layer density
+    :param sampleSize: amount of samples, equal to len(TQ_states_filtered) in main.py
     :param N_s: amount of samples, needs to be calculated if used in training
     :param N_th: thermalisation, not used when TitanQ is used for smapling
     :param reg: regularization erm for the inversion of the S_kk matrix, default 1e-4.
@@ -300,13 +297,12 @@ def stochReconfig(weightsIndep, biasIndep, bonds, state, N_s: int = 1000, N_th: 
     When used for training, an array of states will be used as input
     """
 
-    nspins, alpha = weightsIndep.shape
-    weights, weightsMask, bias, biasMask = getFullVarPar_2D(weightsIndep, biasIndep, nspins, alpha)
+    # nspins, alpha = weightsIndep.shape
+    # weights, weightsMask, bias, biasMask = getFullVarPar_2D(weightsIndep, biasIndep, nspins, alpha)
     # print(f" weightsmask: {weightsMask}")
     # print(f"biasmask: {biasMask}")
-
-    sampleSize = len(state) # dimension of one sample is nspins
-    # print(f"len state = samplesize = {sampleSize}")
+    nspins = len(state)
+    # sampleSize = len(state) # dimension of one sample is nspins
 
     expVal_obsk = np.zeros(alpha * (nspins + 1))
     expVal_obsk_obsk = np.zeros((alpha * (nspins + 1), alpha * (nspins + 1)))
@@ -319,12 +315,12 @@ def stochReconfig(weightsIndep, biasIndep, bonds, state, N_s: int = 1000, N_th: 
     # for _ in range(N_s):
         # state, acc, rej = nextStateMC(state, weights, bias)
 
-    weightedSum = state @ weights + bias
+    weightedSum = state @ weightsFull + biasFull
     obsk = np.zeros(alpha * (nspins + 1))
     obsk[: alpha * nspins] = np.outer(state, np.tanh(weightedSum))[weightsMask]
     obsk[alpha * nspins:] = np.tanh(weightedSum)[biasMask]
 
-    locEng = calcLocEng(state, alpha, bonds, weights, bias)
+    locEng = calcLocEng(state, alpha, bonds, weightsFull, biasFull)
 
     expVal_obsk += obsk / sampleSize
     expVal_obsk_obsk += np.outer(obsk, obsk) / sampleSize
