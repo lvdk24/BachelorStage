@@ -476,16 +476,20 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 26, timeout = 2, precis
     # save evolution of variational energy over the epochs to .json file
     end_time = time.time()
     runtime = end_time - start_time
+    time_per_sweep = runtime/epochs
     varEng_Evolution = {
         "varEngVal_arr":  varEngVal_arr,
         "runtime": runtime,
+        "time_per_sweep": time_per_sweep,
         "nspins": nspins,
         "alpha": alpha,
         "epochs": epochs,
         "nruns": nruns,
         "timeout": timeout,
         "precision_param": precision_param,
-        "learning_rate": lr
+        "learning_rate": lr,
+        "weightsRBM": weightsRBM,
+        "biasRBM": biasRBM
     }
 
     with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'w') as file:
@@ -553,8 +557,8 @@ def some_func(n, a, ip_id):
 
 
 
-
-trainingLoop_TQ(36, 4, 300)
+for alpha in alpha_ls:
+    trainingLoop_TQ(16, alpha, 300)
 
 
 
