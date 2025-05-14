@@ -4,9 +4,10 @@ import matplotlib as mpl
 import h5py
 import glob
 from tqdm import tqdm
+import json
 
 from TitanQ import base_path, calc_path, param_path, bonds_path, magn_filt_ratio
-from main import getVarEngVal, nspins_ls, alpha_ls, timeout_ls, precision_ls, load_engVal, calcRelErr_vs_timeout, trainingLoop_TQ
+from main import getVarEngVal, nspins_ls, alpha_ls, timeout_ls, precision_ls, load_engVal, calcRelErr_vs_timeout, trainingLoop_TQ, storeVal_path
 
 plotting_diff_RBMEng = True
 plotting_UF_varEng = False
@@ -351,60 +352,70 @@ def makePlot_magn_filt_ratio(nspins_ls, alpha, timeout_ls, nruns, precision_para
     figcount += 1
     plt.show()
 
-def makePlot_hist_training_varEng(nspins, alpha, epochs):
-    # check how many files of this configuration exist already
-    list_of_files = glob.glob(f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/*.csv")
-
-    epoch_runs = len(list_of_files)
-
-    # varEngVal, varEngVal_arr, _, _, epoch = trainingLoop_TQ(nspins, alpha)
-
-    # x_val = np.arange(epochs)
-
-    for epoch_ind in range(epoch_runs):
-        varEngVal_arr = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/varEng_evolution_{nspins}_{alpha}_{epoch_ind+1}of{epochs}.csv", delimiter=",")
-        figcount = 1
-        plt.figure(figcount)
-
-        hist_varEng_Evo_TQ, bins_varEng_Evo_TQ = np.histogram(varEngVal_arr, bins=60, density=True)
-        hist_varEng_Evo_TQ = hist_varEng_Evo_TQ / np.sum(hist_varEng_Evo_TQ)
-        # plt.axhline(varEngVal)
-
-        plt.step((bins_varEng_Evo_TQ[:-1] + bins_varEng_Evo_TQ[1:]) / 2, hist_varEng_Evo_TQ, color='blue',)
-
-        myTitle = f"Variational energy, epoch = {epoch_ind + 1}"
-        plt.xlabel("Variational Energy")
-        plt.ylabel("Probability")
-        # plt.legend(loc="upper right")
-        plt.title(myTitle, loc='center', wrap=True)
-        plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEng_Evo_{epoch_ind + 1}of{epochs}.png")
-        figcount += 1
-
-        plt.show()
+# def makePlot_hist_training_varEng(nspins, alpha, epochs):
+#     # check how many files of this configuration exist already
+#     list_of_files = glob.glob(f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/*.csv")
+#
+#     epoch_runs = len(list_of_files)
+#
+#     # varEngVal, varEngVal_arr, _, _, epoch = trainingLoop_TQ(nspins, alpha)
+#
+#     # x_val = np.arange(epochs)
+#
+#     for epoch_ind in range(epoch_runs):
+#         varEngVal_arr = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/varEng_evolution_{nspins}_{alpha}_{epoch_ind+1}of{epochs}.csv", delimiter=",")
+#         figcount = 1
+#         plt.figure(figcount)
+#
+#         hist_varEng_Evo_TQ, bins_varEng_Evo_TQ = np.histogram(varEngVal_arr, bins=60, density=True)
+#         hist_varEng_Evo_TQ = hist_varEng_Evo_TQ / np.sum(hist_varEng_Evo_TQ)
+#         # plt.axhline(varEngVal)
+#
+#         plt.step((bins_varEng_Evo_TQ[:-1] + bins_varEng_Evo_TQ[1:]) / 2, hist_varEng_Evo_TQ, color='blue',)
+#
+#         myTitle = f"Variational energy, epoch = {epoch_ind + 1}"
+#         plt.xlabel("Variational Energy")
+#         plt.ylabel("Probability")
+#         # plt.legend(loc="upper right")
+#         plt.title(myTitle, loc='center', wrap=True)
+#         plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEng_Evo_{epoch_ind + 1}of{epochs}.png")
+#         figcount += 1
+#
+#         plt.show()
 
 def makePlot_training_varEngVal(nspins, alpha, epochs):
 
     # check how many files of this configuration exist
-    list_of_files = glob.glob(
-        f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/*.csv")
+    # list_of_files = glob.glob(
+    #     f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/*.csv")
+    #
+    # epoch_runs = len(list_of_files)
 
-    epoch_runs = len(list_of_files)
-
-    varEngval_Evo_arr = []
+    # varEngval_Evo_arr = []
 
     # x_val = np.arange(epochs)
+    # with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'w') as file:
+    #     json.dump(varEng_Evolution, file)
 
 
-    varEngval_Evo_arr = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", delimiter=",")
-    # varEng_evolution_16_2_100
+    with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'r') as file:
+        varEngVal_evolution = json.load(file)
+        varEngVal_arr = varEngVal_evolution['varEngVal_arr']
+        runtime = varEngVal_evolution['runtime']
 
 
+    # varEngval_Evo_arr = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", delimiter=",")
+
+
+    # runtime_in_h = int(runtime/3600)
+    runtime_in_min = int(runtime/60)
+    runtime_rest_sec = int(runtime%60)
     plt.figure()
     x = np.arange(epochs)
 
-    plt.plot(x, varEngval_Evo_arr)
+    plt.plot(x, varEngVal_arr)
 
-    myTitle = f"Variational energy, n={nspins}, "+ r"$\alpha$" +f"={alpha}, " + "epochs={epochs}"
+    myTitle = f"Variational energy, n={nspins}, "+ r"$\alpha$" +f"={alpha}, " + f"epochs={epochs}, runtime={runtime_in_min}m{runtime_rest_sec}s"
     plt.xlabel("epoch")
     plt.ylabel("Variational Energy")
     # plt.legend(loc="upper right")
@@ -415,7 +426,7 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
 
 # makePlot_hist_training_varEng(16,2,10)
 
-# makePlot_training_varEngVal(16,2,100)
+# makePlot_training_varEngVal(16,4,10)
 
 
 # makePlot_training_varEngVal(16,2,100)

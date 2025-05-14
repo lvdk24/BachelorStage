@@ -19,6 +19,7 @@ base_path = os.getenv("BASE_PATH")
 calc_path = f"{base_path}/calculations"
 param_path = f"{base_path}/ising_params"
 bonds_path = f"{base_path}/bonds"
+storeVal_path = f"{calc_path}/varEng/varEng_training_evolution"
 
 
 def load_weights_and_bias(nspins, alpha,ising_params_id):

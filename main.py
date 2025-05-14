@@ -11,7 +11,7 @@ import json
 import asyncio
 import math
 
-from TitanQ import TitanQFunc, load_weights_and_bias, base_path, calc_path, param_path, bonds_path, boltzmann_energy, magn_filt, magn_filt_split, magn_filt_ratio
+from TitanQ import TitanQFunc, load_weights_and_bias, base_path, calc_path, param_path, bonds_path, storeVal_path, boltzmann_energy, magn_filt, magn_filt_split, magn_filt_ratio
 from NQS import stochReconfig, calcLocEng, calcLocEng_new, logWaveFunc, genBonds_2D, getFullVarPar_2D
 
 nspins_ls = [16,36,64,100,196,324,484]
@@ -429,12 +429,9 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 26, timeout = 2, precis
     :param lr:
     :return: variational energy array of all states
     """
-    # checking and creating a new directory
-    storeVal_path = f"{calc_path}/varEng/varEng_training_evolution/"
 
+    start_time = time.time()
 
-    # if os.path.isfile(storeVal_path):
-    #     os.mkdir(storeVal_path)
 
     # initialise random RBM parameters
     weightsRBM = np.random.normal(scale=1e-4, size=(nspins, alpha))
@@ -443,11 +440,6 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 26, timeout = 2, precis
     # get the full weights and biases and convert them to Ising parameters (for use with TitanQ)
     weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins, alpha) # these are RBM parameters
     weightsIsing, biasIsing = varPar_to_Ising(weightsFull, biasFull)
-
-    # # trying with given ising parameters
-    # weightsIsing, biasIsing = load_weights_and_bias(nspins, alpha, 0)
-    # weightsRBM, biasRBM = varPar_to_RBM(weightsIsing, biasIsing, nspins, alpha)
-    # weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins, alpha)
 
     bonds = genBonds_2D(nspins)
     varEngVal_arr = []
@@ -466,10 +458,8 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 26, timeout = 2, precis
         # print(f"length of filtered states {len(TQ_states_filtered)}")
 
         # SR
-
         weightsGrad, biasGrad, _, varEngVal = stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, TQ_states_filtered, alpha)
         varEngVal_arr.append(varEngVal)
-
 
         # parameter update
         weightsRBM -= lr * weightsGrad
@@ -479,11 +469,28 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 26, timeout = 2, precis
         weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins, alpha)
         weightsIsing, biasIsing = varPar_to_Ising(weightsFull, biasFull)
 
-        # nan happens when RunTimeWarning and overflow
-        if math.isnan(varEngVal_arr[0]):
-            break
-    # save evolution of variational energy over the epochs to .txt file
-    np.savetxt(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", varEngVal_arr, delimiter=",")
+        # nan happens when RunTimeWarning and overflow, disabling this for efficiency
+        # if math.isnan(varEngVal_arr[0]):
+        #     break
+
+    # save evolution of variational energy over the epochs to .json file
+    end_time = time.time()
+    runtime = end_time - start_time
+    varEng_Evolution = {
+        "varEngVal_arr":  varEngVal_arr,
+        "runtime": runtime,
+        "nspins": nspins,
+        "alpha": alpha,
+        "epochs": epochs,
+        "nruns": nruns,
+        "timeout": timeout,
+        "precision_param": precision_param,
+        "learning_rate": lr
+    }
+
+    with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'w') as file:
+        json.dump(varEng_Evolution, file)
+    # np.savetxt(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", varEngVal_arr, delimiter=",")
     return varEngVal,varEngVal_arr, weightsRBM, biasRBM, epochs
 
 # Trying out new calcLocEng_new:
@@ -543,42 +550,13 @@ def some_func(n, a, ip_id):
 #
 # print(end-start)
 
-print(trainingLoop_TQ(16, 2, 100)[1])
 
-# nspins = 16
-# alpha = 2
-# weightsIsing, biasIsing = load_weights_and_bias(nspins, alpha, 0)
-# print(f"shape weightIsing: {weightsIsing.shape}")
-# print(f"shape biasIsing: {biasIsing.shape}")
-#
-# weightsRBM, biasRBM = varPar_to_RBM(weightsIsing, biasIsing, nspins, alpha)
-# print(f"shape weightsRBM: {weightsRBM.shape}")
-# print(f"shape biasRBM: {biasRBM.shape}")
-#
-#
-# #deze stap is dus onnodig in dit geval. De translational invariance zit hier niet in verwerkt
-# weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins, alpha)
-# print(f"shape weightsFull: {weightsFull.shape}")
-# print(f"shape weightsMask: {weightsMask.shape}")
-# print(f"shape biasFull: {biasFull.shape}")
-# print(f"shape biasMask: {biasMask.shape}")
-#
-#
-# print("now with randomly init'ed params")
-# weightsRBM = np.random.normal(scale=1e-4, size=(nspins, alpha))
-# biasRBM = np.random.normal(scale=1e-4, size=(alpha))
-# print(f"shape weightsRBM: {weightsRBM.shape}")
-# print(f"shape biasRBM: {biasRBM.shape}")
-#
-# # get the full weights and biases and convert them to Ising parameters (for use with TitanQ)
-# weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins, alpha) # these are RBM parameters
-# print(f"shape weightsFull: {weightsFull.shape}")
-# print(f"shape weightsMask: {weightsMask.shape}")
-# print(f"shape biasFull: {biasFull.shape}")
-# print(f"shape biasMask: {biasMask.shape}")
-#
-# weightsIsing, biasIsing = varPar_to_Ising(weightsFull, biasFull)
-# print(f"shape weightIsing: {weightsIsing.shape}")
-# print(f"shape biasIsing: {biasIsing.shape}")
+
+
+
+trainingLoop_TQ(36, 2, 300)
+
+
+
 
 
