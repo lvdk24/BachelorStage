@@ -278,7 +278,7 @@ def calcLocEng_new(state, alpha, bonds, weightsRBM, biasRBM):
             locEng -= 2 * np.exp(RBMEng_new - RBMEng)
     return locEng
 
-def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, state, alpha, sampleSize, N_th: int = 100, reg: float = 1e-4):
+def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, alpha, N_th: int = 100, reg: float = 1e-4):
     """ Compute the gradients used to update the RBM
 
     :param weightsFull: the independent set of weights shape=(N, alpha)
@@ -286,7 +286,7 @@ def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, state, al
     :param biasFull: the independent set of weights shape=(N, alpha)
     :param biasMask: the independent set of biases shape(alpha)
     :param bonds: 2D bonds
-    :param state: one state (array) of spins (-1,1)
+    :param state: matrix of states, (array of arrays) of spins (-1,1)
     :param alpha: hidden layer density
     :param sampleSize: amount of samples, equal to len(TQ_states_filtered) in main.py
     :param N_s: amount of samples, needs to be calculated if used in training
@@ -301,7 +301,8 @@ def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, state, al
     # weights, weightsMask, bias, biasMask = getFullVarPar_2D(weightsIndep, biasIndep, nspins, alpha)
     # print(f" weightsmask: {weightsMask}")
     # print(f"biasmask: {biasMask}")
-    nspins = len(state)
+    nspins = len(states[0])
+    sampleSize = len(states)
     # sampleSize = len(state) # dimension of one sample is nspins
 
     expVal_obsk = np.zeros(alpha * (nspins + 1))
@@ -315,17 +316,19 @@ def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, state, al
     # for _ in range(N_s):
         # state, acc, rej = nextStateMC(state, weights, bias)
 
-    weightedSum = state @ weightsFull + biasFull
-    obsk = np.zeros(alpha * (nspins + 1))
-    obsk[: alpha * nspins] = np.outer(state, np.tanh(weightedSum))[weightsMask]
-    obsk[alpha * nspins:] = np.tanh(weightedSum)[biasMask]
+    for state in states:
 
-    locEng = calcLocEng(state, alpha, bonds, weightsFull, biasFull)
+        weightedSum = state @ weightsFull + biasFull
+        obsk = np.zeros(alpha * (nspins + 1))
+        obsk[: alpha * nspins] = np.outer(state, np.tanh(weightedSum))[weightsMask]
+        obsk[alpha * nspins:] = np.tanh(weightedSum)[biasMask]
 
-    expVal_obsk += obsk / sampleSize
-    expVal_obsk_obsk += np.outer(obsk, obsk) / sampleSize
-    expVal_locEng += locEng / sampleSize
-    expVal_locEng_obsk += locEng * obsk / sampleSize
+        locEng = calcLocEng(state, alpha, bonds, weightsFull, biasFull)
+
+        expVal_obsk += obsk / sampleSize
+        expVal_obsk_obsk += np.outer(obsk, obsk) / sampleSize
+        expVal_locEng += locEng / sampleSize
+        expVal_locEng_obsk += locEng * obsk / sampleSize
 
     S_kk_inv = np.linalg.inv((expVal_obsk_obsk - np.outer(expVal_obsk, expVal_obsk)) + np.eye(alpha * (nspins + 1)) * reg)
     Fk = expVal_locEng_obsk - expVal_locEng * expVal_obsk

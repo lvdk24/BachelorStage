@@ -452,7 +452,7 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 26, timeout = 2, precis
     bonds = genBonds_2D(nspins)
 
     for i in tqdm(range(epochs)):
-
+        varEngVal_arr = []
         # this needs to happen every new epoch
         # get array of visible states from TitanQ
         _, TQ_visStates_oneRow, _, _, _, _, _, _, _ = TitanQFunc(nspins, alpha, weightsIsing, biasIsing, timeout, precision_param)
@@ -466,14 +466,10 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 26, timeout = 2, precis
         # print(f"length of filtered states {len(TQ_states_filtered)}")
 
         # SR
-        varEngVal_arr = []
-        sampleSize = len(TQ_states_filtered)
-        for filt_state in TQ_states_filtered:
-            weightsGrad, biasGrad, _, varEngVal = stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, filt_state, alpha, sampleSize)
-            # print(f"wG: {filt_state_ind},  {weightsGrad} ")
 
-            varEngVal_arr.append(varEngVal)
-        # weightsGrad, biasGrad, _, varEngVal_arr = stochReconfig(weightsIndep, biasIndep, bonds, TQ_states_filtered)
+        weightsGrad, biasGrad, _, varEngVal = stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, TQ_states_filtered, alpha)
+        varEngVal_arr.append(varEngVal)
+
 
         # parameter update
         weightsRBM -= lr * weightsGrad
@@ -487,7 +483,7 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 26, timeout = 2, precis
         if math.isnan(varEngVal_arr[0]):
             break
     # save evolution of variational energy over the epochs to .txt file
-        np.savetxt(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{i+1}of{epochs}.csv", varEngVal_arr, delimiter=",")
+    np.savetxt(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", varEngVal_arr, delimiter=",")
     return varEngVal,varEngVal_arr, weightsRBM, biasRBM, epochs
 
 # Trying out new calcLocEng_new:

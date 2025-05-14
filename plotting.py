@@ -395,9 +395,8 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
     # x_val = np.arange(epochs)
 
     for epoch_ind in tqdm(range(epoch_runs)):
-        varEngVal_arr = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/varEng_evolution_{nspins}_{alpha}_{epoch_ind+1}of{epochs}.csv", delimiter=",")
-        print(varEngVal_arr[0])
-        varEngval_Evo_arr.append(varEngVal_arr[0])
+        varEngVal = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/varEng_evolution_{nspins}_{alpha}_{epoch_ind+1}of{epochs}.csv", delimiter=",")
+        varEngval_Evo_arr.append(varEngVal)
 
 
     plt.figure()
@@ -423,28 +422,3 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
 # makePlot_training_varEng(16, 2)
 
 
-# Fixing random state for reproducibility
-
-# def UF_varEng_dist_comp(nspins, alpha, timeout, nruns, precision_param)
-
-# making distributions differences plots
-
-# plotting relative error vs UF (with errorbars)
-# makePlot_relErr_vs_timeout_split_states(nspins_ls, 2, timeout_ls, 32, split_bins=4)
-
-# plotting magn filter ratio vs nspins
-# makePlot_magn_filt_ratio(nspins_ls, 2, timeout_ls, 32, 'high')
-
-
-# for alpha in alpha_ls:
-#     make_relErr_vs_timeout_plot(nspins_ls, alpha, nruns=32)
-        # for nspins in nspins_ls:
-        # make_relErr_vs_timeout_plot(nspins_ls, alpha, 8)
-        #     make_RBMEng_diff_plot(nspins, alpha, 10, 8, 'standard')
-        #     make_varEng_diff_plot(nspins, alpha, 10, 8, 'standard')
-        #     make_varEng_diff_prec_plot(nspins, alpha, 10, 8, precision_ls)
-            # make_RBMEng_diff_plot(nspins,alpha,10,8)
-    # make_RBMEng_diff_plot(64, 2, 60, 8)
-    # make_RBMEng_diff_plot(64, 2, 10, 32)
-    # make_varEng_diff_plot(36, 2, 10, 32)
-# make_RBMEng_diff_plot(16,2,10,8,'high')
