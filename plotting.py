@@ -385,27 +385,12 @@ def makePlot_magn_filt_ratio(nspins_ls, alpha, timeout_ls, nruns, precision_para
 
 def makePlot_training_varEngVal(nspins, alpha, epochs):
 
-    # check how many files of this configuration exist
-    # list_of_files = glob.glob(
-    #     f"{calc_path}/varEng/varEng_training_evolution/{nspins}_{alpha}_{epochs}/*.csv")
-    #
-    # epoch_runs = len(list_of_files)
-
-    # varEngval_Evo_arr = []
-
-    # x_val = np.arange(epochs)
-    # with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'w') as file:
-    #     json.dump(varEng_Evolution, file)
-
-
     with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'r') as file:
         varEngVal_evolution = json.load(file)
         varEngVal_arr = varEngVal_evolution['varEngVal_arr']
         runtime = varEngVal_evolution['runtime']
         time_per_sweep = varEngVal_evolution['time_per_sweep']
 
-
-    # varEngval_Evo_arr = np.loadtxt(f"{calc_path}/varEng/varEng_training_evolution/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", delimiter=",")
 
 
     # runtime_in_h = int(runtime/3600)
@@ -416,7 +401,7 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
 
     plt.plot(x, varEngVal_arr)
 
-    myTitle = f"Variational energy, n={nspins}, "+ r"$\alpha$" +f"={alpha}, " + f"epochs={epochs}, time/sweep={time_per_sweep}s"
+    myTitle = f"Variational energy, n={nspins}, "+ r"$\alpha$" +f"={alpha}, " + f"epochs={epochs}, time/sweep={int(time_per_sweep)}s"
     plt.xlabel("epoch")
     plt.ylabel("Variational Energy")
     # plt.legend(loc="upper right")
@@ -427,7 +412,7 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
 
 # makePlot_hist_training_varEng(16,2,10)
 
-# makePlot_training_varEngVal(16,2,100)
+# makePlot_training_varEngVal(64,2,10)
 
 
 # makePlot_training_varEngVal(16,2,100)

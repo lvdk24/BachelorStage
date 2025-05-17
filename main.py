@@ -473,7 +473,7 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 26, timeout = 2, precis
         # nan happens when RunTimeWarning and overflow, disabling this for efficiency
         # if math.isnan(varEngVal_arr[0]):
         #     break
-        # np.savetxt(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", varEngVal_arr, delimiter = ",")
+        np.savetxt(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", varEngVal_arr, delimiter = ",")
 
     # save evolution of variational energy over the epochs to .json file
     end_time = time.time()
@@ -490,8 +490,8 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 26, timeout = 2, precis
         "timeout": timeout,
         "precision_param": precision_param,
         "learning_rate": lr,
-        "weightsRBM": weightsRBM,
-        "biasRBM": biasRBM
+        "weightsRBM": weightsRBM.tolist(),
+        "biasRBM": biasRBM.tolist()
     }
 
     with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'w') as file:
@@ -560,7 +560,7 @@ def some_func(n, a, ip_id):
 
 
 
-trainingLoop_TQ(16, 2, 300)
+trainingLoop_TQ(16, 4, 15)
 
 
 
