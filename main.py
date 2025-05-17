@@ -14,7 +14,7 @@ import math
 from TitanQ import TitanQFunc, load_weights_and_bias, base_path, calc_path, param_path, bonds_path, storeVal_path, boltzmann_energy, magn_filt, magn_filt_split, magn_filt_ratio
 from NQS import stochReconfig, calcLocEng, calcLocEng_new, logWaveFunc, genBonds_2D, getFullVarPar_2D
 
-nspins_ls = [16,36,64,100,196,324,484]
+nspins_ls = [16,64]#[16,36,64,100,196,324,484]
 alpha_ls = [2,4]
 timeout_ls = [0.1, 0.5,2,4,10,16, 24]
 precision_ls = ['standard','high']
@@ -473,7 +473,7 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 26, timeout = 2, precis
         # nan happens when RunTimeWarning and overflow, disabling this for efficiency
         # if math.isnan(varEngVal_arr[0]):
         #     break
-        np.savetxt(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", varEngVal_arr, delimiter = ",")
+        np.savetxt(f"{storeVal_path}/varEngVal_arr/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", varEngVal_arr, delimiter = ",")
 
     # save evolution of variational energy over the epochs to .json file
     end_time = time.time()
@@ -559,8 +559,8 @@ def some_func(n, a, ip_id):
 
 
 
-
-trainingLoop_TQ(16, 4, 15)
+for nspins in nspins_ls:
+    trainingLoop_TQ(nspins, 4, 300)
 
 
 
