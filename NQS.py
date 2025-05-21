@@ -10,19 +10,31 @@ from Mask_2D import bias_map, generate_W_mask, weight_map_numba
 
 # @njit
 def logWaveFunc(state, weightsRBM, biasRBM):
-
     weightedSum_matmult = state @ weightsRBM
-    weightedSum = weightedSum_matmult + biasRBM  #  = θ
+
+    # weights_dim_row = len(weightsRBM[0])
+    #
+    # weightedSum_matmult = np.zeros(weights_dim_row, dtype = np.float64)
+    #
+    #
+    # for j in range(len(weightsRBM[0])):
+    #     mat_elem = 0
+    #     for i in range(len(state)):
+    #         mat_elem += state[i] * weightsRBM[i][j]
+    #     weightedSum_matmult[j] = mat_elem
+
+
+    weightedSum = weightedSum_matmult + biasRBM # = θ
     activation = 2 * np.cosh(weightedSum)
 
-    # weightedSum = state @ weights + bias
+
     # N, M = weightsRBM.shape()
-    # r, N = state.shape()
+    # r, N = state.shape() # r = runs
     # weightedSum = np.zeros((r, M)) #C in fast_matmul
     # fast_matmul(state, weightsRBM, weightedSum)
     # activation = 2 * np.cosh(weightedSum)
-
-    return 0.5 * np.sum(np.log(activation), axis=0).item(), weightedSum, activation#, weightedSum_fast
+    result = 0.5 * np.sum(np.log(activation), axis=0).item()
+    return result, weightedSum, activation#, weightedSum_fast
 
 def getFullVarPar_1D(weightsIndep, biasIndep):
     ''' Get the full set of variational parameters from the independent set of parameters.
@@ -258,24 +270,19 @@ def calcLocEng_new(state, alpha, bonds, weightsRBM, biasRBM):
 
     for bond in bonds:
         # flipSum = []
-        locEng += state[bond[0]] * state[bond[1]]
+        locEng = locEng + (state[bond[0]] * state[bond[1]])
 
         if state[bond[0]] != state[bond[1]]:
 
             flipSum = []
             for i in range(nspins * alpha):
-                flipSum.append(2 * weights_transposed[i][bond[0]] * state[bond[0]] + 2 * weights_transposed[i][bond[1]] * state[bond[1]]) #ik denk dat deze indexering niet goed is
-                # i gaat van 1 t/m M = nspins x alpha
-                # dus dan moet de eerste dimensie dat ook zijn
-                # tweede index vd weights gaat over de spinflip, die moet dus t/m nspins lopen
-
-
+                flipSum.append(2 * weights_transposed[i][bond[0]] * state[bond[0]] + 2 * weights_transposed[i][bond[1]] * state[bond[1]])
 
             weightedSum_new = weightedSum - np.array(flipSum)
             activation_new = 2 * np.cosh(weightedSum_new)
             RBMEng_new = 0.5*np.sum(np.log(activation_new))
 
-            locEng -= 2 * np.exp(RBMEng_new - RBMEng)
+            locEng = locEng - (2 * np.exp(RBMEng_new - RBMEng))
     return locEng
 
 def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, alpha, N_th: int = 100, reg: float = 1e-4):

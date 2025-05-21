@@ -389,7 +389,7 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
         varEngVal_evolution = json.load(file)
         varEngVal_arr = varEngVal_evolution['varEngVal_arr']
         runtime = varEngVal_evolution['runtime']
-        time_per_sweep = varEngVal_evolution['time_per_sweep']
+        # time_per_sweep = varEngVal_evolution['time_per_sweep']
 
 
 
@@ -401,7 +401,7 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
 
     plt.plot(x, varEngVal_arr)
 
-    myTitle = f"Variational energy, n={nspins}, "+ r"$\alpha$" +f"={alpha}, " + f"epochs={epochs}, time/sweep={int(time_per_sweep)}s"
+    myTitle = f"Variational energy, n={nspins}, "+ r"$\alpha$" +f"={alpha}, " + f"epochs={epochs}"#, time/sweep={int(time_per_sweep)}s"
     plt.xlabel("epoch")
     plt.ylabel("Variational Energy")
     # plt.legend(loc="upper right")
@@ -410,9 +410,11 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
 
     plt.show()
 
+
+
 # makePlot_hist_training_varEng(16,2,10)
 
-# makePlot_training_varEngVal(64,2,10)
+makePlot_training_varEngVal(16,2,5)
 
 
 # makePlot_training_varEngVal(16,2,100)
