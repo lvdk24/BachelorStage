@@ -171,7 +171,7 @@ def genBonds(N,pbc = True):
     return lattice
 
 def genBonds_2D(nspins, pbc=True):
-    """ Assume minimal nspins is 16
+    """
 
     :param nspins:
     :param pbc:
@@ -183,15 +183,6 @@ def genBonds_2D(nspins, pbc=True):
     working_length = length
     begin = 0
     lattice = []
-    # hor_lat = np.zeros((nspins - length), dtype = np.float64)
-    # ver_lat = np.zeros((nspins - length), dtype = np.float64)
-    # if pbc:
-    #     pbc_lat_hor = np.zeros((length), dtype = np.float64)
-    #     pbc_lat_ver = np.zeros((length), dtype = np.float64)
-    #
-    #     lattice = np.zeros((2 * nspins), dtype=np.float64)
-    # else:
-    #     lattice = np.zeros((2 * (nspins-length)), dtype=np.float64)
     hor_lat = []
     ver_lat = []
     pbc_lat_hor = []
@@ -206,9 +197,9 @@ def genBonds_2D(nspins, pbc=True):
         # all bonds are the same but translated
         begin = begin + length
         working_length = working_length + length
-        # print(next_row_lattice)
-        # lattice = np.concatenate((lattice,next_row_lattice), axis=0, dtype=np.float64)
+
         hor_lat += next_row_lattice
+
     begin = 0
     # verticale bonds
     for col_ind in range(length):
@@ -219,7 +210,7 @@ def genBonds_2D(nspins, pbc=True):
         begin += 1
 
         ver_lat += next_col_lattice
-        # lattice = np.concatenate((lattice, next_col_lattice), axis=0, dtype=np.float64)
+
     begin = 0
 
     # periodic boundary conditions
@@ -228,25 +219,20 @@ def genBonds_2D(nspins, pbc=True):
         # horizontal pbc
         for i in range(begin, nspins - (length - 1), length):
             pbc_lat_ver += [[i, (i + length - 1)]]
-            # lattice = np.concatenate((lattice, pbc_lat_ver), axis=0, dtype=np.float64)
 
         # vertical pbc
         for i in range(begin, length):
 
             pbc_lat_hor += [[i, (i + nspins - length)]]
-            # lattice = np.concatenate((lattice, pbc_lat_hor), axis=0, dtype=np.float64)
 
             begin += 1
 
-    # lattice = np.zeros((2*nspins),dtype = np.float64)
-    # lattice = np.concatenate((hor_lat, ver_lat, pbc_lat_hor, pbc_lat_ver),axis = 0)
     lattice += hor_lat
     lattice += ver_lat
     lattice += pbc_lat_hor
     lattice += pbc_lat_ver
-    # return lattice
+
     return lattice
-# print(np.array(genBonds_2D(16)))
 
 def calcLocEng(state, alpha, bonds, weights, bias):
     """
@@ -301,7 +287,7 @@ def calcLocEng_new(state, alpha, bonds, weightsRBM, biasRBM):
 
     return locEng
 
-def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, alpha, N_th: int = 100, reg: float = 1e-4):
+def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, alpha, epoch_ind, N_th: int = 100, reg: float = 1e-4, falloff_rate: float = 0.9,init_falloff_rate:float = 100):
     """ Compute the gradients used to update the RBM
 
     :param weightsFull: the independent set of weights shape=(N, alpha)
@@ -352,7 +338,8 @@ def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, a
         expVal_locEng += locEng / sampleSize
         expVal_locEng_obsk += locEng * obsk / sampleSize
 
-    S_kk_inv = np.linalg.inv((expVal_obsk_obsk - np.outer(expVal_obsk, expVal_obsk)) + np.eye(alpha * (nspins + 1)) * reg)
+    # S_kk_inv = np.linalg.inv((expVal_obsk_obsk - np.outer(expVal_obsk, expVal_obsk)) + np.eye(alpha * (nspins + 1)) * reg)
+    S_kk_inv = np.linalg.inv((expVal_obsk_obsk - np.outer(expVal_obsk, expVal_obsk)) + np.eye(alpha * (nspins + 1)) * max(init_falloff_rate *((falloff_rate)^epoch_ind), reg))
     Fk = expVal_locEng_obsk - expVal_locEng * expVal_obsk
 
     grad = S_kk_inv @ Fk

@@ -421,7 +421,7 @@ def calcRelErr_vs_nspins(nspins_ls, alpha, timeout, nruns, precision_param):
 #
 #     return distance_JS
 
-def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 24, timeout = 2, precision_param = 'high', lr: float = 5e-3):
+def trainingLoop_TQ(nspins, alpha, epochs: int, nruns = 24, timeout = 2, precision_param = 'high', lr: float = 5e-3):
     """
 
     :param nspins:
@@ -445,17 +445,16 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 24, timeout = 2, precis
     weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins, alpha) # these are RBM parameters
     weightsIsing, biasIsing = varPar_to_Ising(weightsFull, biasFull)
 
-    bonds = genBonds_2D(nspins)
+    bonds = np.array(genBonds_2D(nspins))
 
-    # determining amount of nruns
+    # determining amount of nruns --> For later adaptation, for now it's manual.
     # ratio_arr = np.loadtxt(f"{calc_path}/accuracy/precision_{precision_param}/magn_filt_ratio_{alpha}_{nruns}.csv",delimiter=",")
 
     # keeping track of some values
     varEngVal_arr = []
-    time_per_sample_arr = []
     amount_of_samples_arr = []
 
-    for i in tqdm(range(epochs)):
+    for epoch_ind in tqdm(range(epochs)):
 
         # for determining time per sample
         epoch_start = time.time()
@@ -473,11 +472,12 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 24, timeout = 2, precis
             TQ_states_filtered = magn_filt(nspins, alpha, timeout, nruns, precision_param, TQ_visStates, True)
             filt_states.extend(TQ_states_filtered)
 
+
         amount_of_filt_samples = len(filt_states)
         amount_of_samples_arr.append(amount_of_filt_samples)
 
         # SR
-        weightsGrad, biasGrad, _, varEngVal = stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, filt_states, alpha)
+        weightsGrad, biasGrad, _, varEngVal = stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, np.array(filt_states), alpha, epoch_ind)
         varEngVal_arr.append(varEngVal)
 
         # parameter update
@@ -493,26 +493,16 @@ def trainingLoop_TQ(nspins, alpha,  epochs: int, nruns = 24, timeout = 2, precis
         #     break
         np.savetxt(f"{storeVal_path}/varEngVal_arr/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", varEngVal_arr, delimiter = ",")
 
-        # store epoch runtime into array
-        epoch_end = time.time()
-        epoch_runtime = epoch_end - epoch_start
-        time_per_sample_arr.append(epoch_runtime/amount_of_filt_samples)
-        # print(time_per_sample_arr)
 
-    # calculate (averaged over epochs) time per sample using array
-    time_per_sample = np.mean(time_per_sample_arr)
 
     # calculating total runtime
     end_time = time.time()
     runtime = end_time - start_time
-    time_per_sweep = runtime/epochs
 
     # save evolution of variational energy over the epochs to .json file
     varEng_Evolution = {
         "varEngVal_arr":  varEngVal_arr,
         "runtime": runtime,
-        "time_per_sweep": time_per_sweep,
-        "time_per_sample_arr": time_per_sample_arr,
         "amount_of_filt_samples": amount_of_samples_arr,
         "nspins": nspins,
         "alpha": alpha,
@@ -613,9 +603,6 @@ def calcRelErr_QMC(nspins_ls, alpha, epochs_ls):
 
 # print(calcRelErr_QMC(nspins_ls, 4, 300))
 # print(calcRelErr_QMC([16,36,64], 2, [200,300,300]))
-
-
-
 
 
 
