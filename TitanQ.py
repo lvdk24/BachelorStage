@@ -33,8 +33,8 @@ def load_weights_and_bias(nspins, alpha,ising_params_id):
     weights_path = f"{param_path}/ising_parameters/ising_params_id_{ising_params_id}/Ising_{nspins}_{alpha}_ti_J.csv"
     bias_path = f"{param_path}/ising_parameters/ising_params_id_{ising_params_id}/Ising_{nspins}_{alpha}_ti_h.csv"
 
-    weightsIsing = np.loadtxt(weights_path, delimiter=",", dtype=np.float64)
-    biasIsing = np.loadtxt(bias_path, delimiter=",", dtype=np.float64)
+    weightsIsing = np.array(np.loadtxt(weights_path, delimiter=",", dtype=np.float64))
+    biasIsing = np.array(np.loadtxt(bias_path, delimiter=",", dtype=np.float64))
 
     return weightsIsing, biasIsing
 

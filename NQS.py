@@ -8,25 +8,23 @@ from Mask_2D import bias_map, generate_W_mask, weight_map_numba
 # from SideCalculations import fast_matmul
 # from main import varPar_to_Ising, getStates
 
-# @njit
+@njit
 def logWaveFunc(state, weightsRBM, biasRBM):
-    weightedSum_matmult = state @ weightsRBM
+    # weightedSum_matmult = state @ weightsRBM
 
-    # weights_dim_row = len(weightsRBM[0])
-    #
-    # weightedSum_matmult = np.zeros(weights_dim_row, dtype = np.float64)
-    #
-    #
-    # for j in range(len(weightsRBM[0])):
-    #     mat_elem = 0
-    #     for i in range(len(state)):
-    #         mat_elem += state[i] * weightsRBM[i][j]
-    #     weightedSum_matmult[j] = mat_elem
+    weights_dim_row = len(weightsRBM[0])
+
+    weightedSum_matmult = np.zeros(weights_dim_row, dtype = np.float64)
+
+    for j in range(len(weightsRBM[0])):
+        mat_elem = 0
+        for i in range(len(state)):
+            mat_elem += state[i] * weightsRBM[i][j]
+        weightedSum_matmult[j] = mat_elem
 
 
     weightedSum = weightedSum_matmult + biasRBM # = θ
     activation = 2 * np.cosh(weightedSum)
-
 
     # N, M = weightsRBM.shape()
     # r, N = state.shape() # r = runs
@@ -185,9 +183,20 @@ def genBonds_2D(nspins, pbc=True):
     working_length = length
     begin = 0
     lattice = []
+    # hor_lat = np.zeros((nspins - length), dtype = np.float64)
+    # ver_lat = np.zeros((nspins - length), dtype = np.float64)
+    # if pbc:
+    #     pbc_lat_hor = np.zeros((length), dtype = np.float64)
+    #     pbc_lat_ver = np.zeros((length), dtype = np.float64)
+    #
+    #     lattice = np.zeros((2 * nspins), dtype=np.float64)
+    # else:
+    #     lattice = np.zeros((2 * (nspins-length)), dtype=np.float64)
     hor_lat = []
     ver_lat = []
-    pbc_lat = []
+    pbc_lat_hor = []
+    pbc_lat_ver = []
+
 
     # horizontal bonds
     for row_ind in range(length):
@@ -195,11 +204,11 @@ def genBonds_2D(nspins, pbc=True):
         next_row_lattice = [[i, (i + 1)] for i in range(begin, working_length - 1)]
 
         # all bonds are the same but translated
-        begin += length
-        working_length += length
-
+        begin = begin + length
+        working_length = working_length + length
+        # print(next_row_lattice)
+        # lattice = np.concatenate((lattice,next_row_lattice), axis=0, dtype=np.float64)
         hor_lat += next_row_lattice
-
     begin = 0
     # verticale bonds
     for col_ind in range(length):
@@ -210,7 +219,7 @@ def genBonds_2D(nspins, pbc=True):
         begin += 1
 
         ver_lat += next_col_lattice
-
+        # lattice = np.concatenate((lattice, next_col_lattice), axis=0, dtype=np.float64)
     begin = 0
 
     # periodic boundary conditions
@@ -218,19 +227,26 @@ def genBonds_2D(nspins, pbc=True):
 
         # horizontal pbc
         for i in range(begin, nspins - (length - 1), length):
-            pbc_lat += [[i, (i + length - 1)]]
+            pbc_lat_ver += [[i, (i + length - 1)]]
+            # lattice = np.concatenate((lattice, pbc_lat_ver), axis=0, dtype=np.float64)
 
         # vertical pbc
         for i in range(begin, length):
 
-            pbc_lat += [[i, (i + nspins - length)]]
+            pbc_lat_hor += [[i, (i + nspins - length)]]
+            # lattice = np.concatenate((lattice, pbc_lat_hor), axis=0, dtype=np.float64)
 
             begin += 1
 
+    # lattice = np.zeros((2*nspins),dtype = np.float64)
+    # lattice = np.concatenate((hor_lat, ver_lat, pbc_lat_hor, pbc_lat_ver),axis = 0)
     lattice += hor_lat
     lattice += ver_lat
-    lattice += pbc_lat
+    lattice += pbc_lat_hor
+    lattice += pbc_lat_ver
+    # return lattice
     return lattice
+# print(np.array(genBonds_2D(16)))
 
 def calcLocEng(state, alpha, bonds, weights, bias):
     """
@@ -252,7 +268,7 @@ def calcLocEng(state, alpha, bonds, weights, bias):
             locEng -= 2 * np.exp(logWaveFunc(flippedState, weights, bias)[0] - logWaveFunc(state, weights, bias)[0])
     return locEng
 
-# @njit
+@njit
 def calcLocEng_new(state, alpha, bonds, weightsRBM, biasRBM):
     """ Faster way (w.r.t. calcLocEng) of calculating the local energy (and therefore the variational energy)
     :param state:
@@ -269,20 +285,20 @@ def calcLocEng_new(state, alpha, bonds, weightsRBM, biasRBM):
     weights_transposed = weightsRBM.transpose() #dit werkt nog niet, maar zoiets zou het moeten zijn
 
     for bond in bonds:
-        # flipSum = []
         locEng = locEng + (state[bond[0]] * state[bond[1]])
 
         if state[bond[0]] != state[bond[1]]:
 
-            flipSum = []
+            flipSum = np.zeros((nspins * alpha), dtype = np.float64)
             for i in range(nspins * alpha):
-                flipSum.append(2 * weights_transposed[i][bond[0]] * state[bond[0]] + 2 * weights_transposed[i][bond[1]] * state[bond[1]])
+                flipSum[i]=2 * weights_transposed[i][bond[0]] * state[bond[0]] + 2 * weights_transposed[i][bond[1]] * state[bond[1]]
 
-            weightedSum_new = weightedSum - np.array(flipSum)
+            weightedSum_new = weightedSum - flipSum
             activation_new = 2 * np.cosh(weightedSum_new)
             RBMEng_new = 0.5*np.sum(np.log(activation_new))
 
             locEng = locEng - (2 * np.exp(RBMEng_new - RBMEng))
+
     return locEng
 
 def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, alpha, N_th: int = 100, reg: float = 1e-4):
@@ -310,7 +326,6 @@ def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, a
     # print(f"biasmask: {biasMask}")
     nspins = len(states[0])
     sampleSize = len(states)
-    # sampleSize = len(state) # dimension of one sample is nspins
 
     expVal_obsk = np.zeros(alpha * (nspins + 1))
     expVal_obsk_obsk = np.zeros((alpha * (nspins + 1), alpha * (nspins + 1)))
@@ -330,7 +345,7 @@ def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, a
         obsk[: alpha * nspins] = np.outer(state, np.tanh(weightedSum))[weightsMask]
         obsk[alpha * nspins:] = np.tanh(weightedSum)[biasMask]
 
-        locEng = calcLocEng(state, alpha, bonds, weightsFull, biasFull)
+        locEng = calcLocEng_new(state, alpha, bonds, weightsFull, biasFull)
 
         expVal_obsk += obsk / sampleSize
         expVal_obsk_obsk += np.outer(obsk, obsk) / sampleSize
