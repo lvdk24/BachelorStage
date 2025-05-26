@@ -339,7 +339,7 @@ def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, a
         expVal_locEng_obsk += locEng * obsk / sampleSize
 
     # S_kk_inv = np.linalg.inv((expVal_obsk_obsk - np.outer(expVal_obsk, expVal_obsk)) + np.eye(alpha * (nspins + 1)) * reg)
-    S_kk_inv = np.linalg.inv((expVal_obsk_obsk - np.outer(expVal_obsk, expVal_obsk)) + np.eye(alpha * (nspins + 1)) * max(init_falloff_rate *((falloff_rate)^epoch_ind), reg))
+    S_kk_inv = np.linalg.inv((expVal_obsk_obsk - np.outer(expVal_obsk, expVal_obsk)) + np.eye(alpha * (nspins + 1)) * max(init_falloff_rate *((falloff_rate)**epoch_ind), reg))
     Fk = expVal_locEng_obsk - expVal_locEng * expVal_obsk
 
     grad = S_kk_inv @ Fk
