@@ -192,7 +192,7 @@ def makePlot_varEng_differentCalculation(nspins, alpha, timeout, nruns, precisio
     plt.ylabel("Probability")
     plt.legend(loc="upper right")
     plt.title(myTitle, loc='center', wrap=True)
-    # plt.savefig(f"{calc_path}/varEng/precision_{precision_param}/varEngPlots/varEngPlot_comp_{nspins}_{alpha}_{timeout}_{nruns}.png")
+    plt.savefig(f"{calc_path}/varEng/precision_{precision_param}/varEngPlots/varEngPlot_comp_{nspins}_{alpha}_{timeout}_{nruns}.png")
     figcount += 1
     plt.show()
 
@@ -390,19 +390,19 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
     with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'r') as file:
         varEngVal_evolution = json.load(file)
         varEngVal_arr = varEngVal_evolution['varEngVal_arr']
-        runtime = varEngVal_evolution['runtime']
-
+        # runtime = varEngVal_evolution['runtime']
 
 
 
     # runtime_in_h = int(runtime/3600)
-    runtime_in_min = int(runtime/60)
-    runtime_rest_sec = int(runtime%60)
+    # runtime_in_min = int(runtime/60)
+    # runtime_rest_sec = int(runtime%60)
     plt.figure()
     x = np.arange(epochs)
 
-    plt.plot(x, varEngVal_arr, label = "TQ training")
-    plt.axhline(-0.678873, color = 'r',label = "QMC_eng")
+    plt.plot(x, varEngVal_arr, label = "300 epochs")
+
+    plt.axhline(-0.701777, color = 'r',label = "QMC_eng")
     myTitle = f"Variational energy, n={nspins}, "+ r"$\alpha$" +f"={alpha}, " + f"epochs={epochs}"#, time/sweep={int(time_per_sweep)}s"
     plt.xlabel("epoch")
     plt.ylabel("Variational Energy")
@@ -413,7 +413,7 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
     plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEngVal_Evo_{nspins}_{alpha}_{epochs}.png")
 
     plt.show()
-
+# makePlot_training_varEngVal(16,2,300)
 
 QMC_eng = [-0.701777,-0.678873,-0.673487 ]
 # makePlot_hist_training_varEng(16,2,10)

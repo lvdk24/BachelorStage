@@ -589,12 +589,12 @@ def some_func(n, a, ip_id):
 #
 # print(end-start)
 
-def calcRelErr_QMC(nspins_ls, alpha, epochs_ls):
+def calcRelErr_QMC(nspins_ls, alpha, epochs):
     relErr_arr = []
     varEng_arr = []
     QMC_eng = [-0.701777,-0.678873,-0.673487 ] #16, 36, 64
     for nspins_ind in range(len(nspins_ls)):
-        with open(f"{storeVal_path}/varEng_evolution_{nspins_ls[nspins_ind]}_{alpha}_{epochs_ls[nspins_ind]}.json", 'r') as file:
+        with open(f"{storeVal_path}/varEng_evolution_{nspins_ls[nspins_ind]}_{alpha}_{epochs}.json", 'r') as file:
             data = json.load(file)
         relErr_arr.append(np.abs(data['varEngVal_arr'][-1] - QMC_eng[nspins_ind]) / (QMC_eng[nspins_ind]) )
         varEng_arr.append(data['varEngVal_arr'][-1])
@@ -602,11 +602,11 @@ def calcRelErr_QMC(nspins_ls, alpha, epochs_ls):
     return relErr_arr, varEng_arr
 
 # print(calcRelErr_QMC(nspins_ls, 4, 300))
-# print(calcRelErr_QMC([16,36,64], 2, [200,300,300]))
+# print(calcRelErr_QMC([16,36,64], 2, 300))
 
 
 
-trainingLoop_TQ(16, 2, 300)
+trainingLoop_TQ(484, 2, 300)
 # trainingLoop_TQ(64, 2, 5)
 
 
