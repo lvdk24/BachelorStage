@@ -390,18 +390,15 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
     with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'r') as file:
         varEngVal_evolution = json.load(file)
         varEngVal_arr = varEngVal_evolution['varEngVal_arr']
-        # runtime = varEngVal_evolution['runtime']
+        filt_samp_arr = varEngVal_evolution['varEngVal_evolution']
 
 
 
-    # runtime_in_h = int(runtime/3600)
-    # runtime_in_min = int(runtime/60)
-    # runtime_rest_sec = int(runtime%60)
     plt.figure()
     x = np.arange(epochs)
 
-    plt.plot(x, varEngVal_arr, label = "300 epochs")
-
+    plt.plot(x, varEngVal_arr, label = "TQ training")
+    plt.plot(x, filt_samp_arr, label = "filt ratio")
     plt.axhline(-0.701777, color = 'r',label = "QMC_eng")
     myTitle = f"Variational energy, n={nspins}, "+ r"$\alpha$" +f"={alpha}, " + f"epochs={epochs}"#, time/sweep={int(time_per_sweep)}s"
     plt.xlabel("epoch")
@@ -410,10 +407,61 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
     # plt.ylim(-0.75,-0.50)
     # plt.legend(loc="upper right")
     plt.title(myTitle, loc='center', wrap=True)
-    plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEngVal_Evo_{nspins}_{alpha}_{epochs}.png")
+    # plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEngVal_Evo_{nspins}_{alpha}_{epochs}.png")
 
     plt.show()
 # makePlot_training_varEngVal(16,2,300)
+
+
+def makePlot_training_varEngVal_copy(nspins, alpha, epochs):
+
+    with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'r') as file:
+        varEngVal_evolution = json.load(file)
+        varEngVal_arr = varEngVal_evolution['varEngVal_arr']
+        filt_samp_arr = varEngVal_evolution['amount_of_filt_samples']
+
+    varEng_col = "#69b3a2"
+    filt_col = "#3399e6"
+
+
+    # plt.figure()
+    x = np.arange(epochs)
+    #
+    # plt.plot(x, varEngVal_arr, label = "TQ training")
+    # plt.plot(x, filt_samp_arr, label = "filt ratio")
+    # plt.axhline(-0.701777, color = 'r',label = "QMC_eng")
+    # myTitle = f"Variational energy, n={nspins}, "+ r"$\alpha$" +f"={alpha}, " + f"epochs={epochs}"#, time/sweep={int(time_per_sweep)}s"
+    # plt.xlabel("epoch")
+    # plt.ylabel("Variational Energy")
+    # plt.legend()
+    # # plt.ylim(-0.75,-0.50)
+    # # plt.legend(loc="upper right")
+    # plt.title(myTitle, loc='center', wrap=True)
+    # # plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEngVal_Evo_{nspins}_{alpha}_{epochs}.png")
+    #
+    # plt.show()
+
+    fig, ax1 = plt.subplots(figsize=(8, 8))
+    ax2 = ax1.twinx()
+
+    ax1.plot(x, varEngVal_arr, color=varEng_col, lw=3)
+    ax2.plot(x, filt_samp_arr, color=filt_col, lw=4)
+
+    ax1.set_xlabel("Epochs")
+    ax1.set_ylabel("variational Energy", color=varEng_col, fontsize=14)
+    ax1.tick_params(axis="y", labelcolor=varEng_col)
+
+    ax2.set_ylabel("Amount of filtered samples", color=filt_col, fontsize=14)
+    ax2.tick_params(axis="y", labelcolor=filt_col)
+
+    fig.suptitle("VarEng & filt samples vs epochs", fontsize=20)
+    fig.autofmt_xdate()
+
+    plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEngVal_Evo_and_filtSamps_{nspins}_{alpha}_{epochs}.png")
+
+    plt.show()
+
+# makePlot_training_varEngVal_copy(16, 2, 300)
 
 QMC_eng = [-0.701777,-0.678873,-0.673487 ]
 # makePlot_hist_training_varEng(16,2,10)

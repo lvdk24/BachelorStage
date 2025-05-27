@@ -14,9 +14,9 @@ import math
 from TitanQ import TitanQFunc, load_weights_and_bias, base_path, calc_path, param_path, bonds_path, storeVal_path, boltzmann_energy, magn_filt, magn_filt_split, magn_filt_ratio
 from NQS import stochReconfig, calcLocEng, calcLocEng_new, logWaveFunc, genBonds_2D, getFullVarPar_2D
 
-nspins_ls = [16,36,64] #[16,36,64,100,196,324,484]
+nspins_ls = [16,36,64,100,196,324,484]
 alpha_ls = [2,4]
-timeout_ls = [0.1, 0.5,2,4,10,16, 24]
+timeout_ls = [0.1, 0.5,2,4,10,16,24]
 precision_ls = ['standard','high']
 
 def varPar_to_Ising(weightsRBM, biasRBM):
@@ -403,37 +403,18 @@ def calcRelErr_vs_nspins(nspins_ls, alpha, timeout, nruns, precision_param):
 
     return relErr_arr
 
-# def calcJSDistance(nspins, alpha, timeout, nruns, precision_param):
-#     """Gives the Jenson-Shannon distance between two distributions
-#
-#     :param nspins:
-#     :param alpha:
-#     :param timeout:
-#     :param nruns:
-#     :return:
-#     """
-#
-#     #load energies
-#     _, _, _, varEngVal_UF, varEngVal_TQ = load_engVal(nspins, alpha, timeout, nruns, precision_param)
-#
-#     #calculate the distance according to JS between TQ and UF.
-#     distance_JS = distance.jensenshannon(varEngVal_TQ,varEngVal_UF)
-#
-#     return distance_JS
-
-def trainingLoop_TQ(nspins, alpha, epochs: int, nruns = 24, timeout = 2, precision_param = 'high', lr: float = 5e-3):
+def trainingLoop_TQ(nspins, alpha, epochs: int, nruns = 30, timeout = 2, precision_param = 'high', lr: float = 5e-3, num_engines = 512):
     """
 
     :param nspins:
     :param alpha:
-    :param nruns: ~2000 samples: magnFiltRatio ~ 0.15, 512 states per run, 2000/(0.15 * 512) = 26
+    :param nruns: ~2000 samples: magn_filt_ratio ~ 0.15, 512 states per run, 2000/(0.15 * 512) = 26, needs to be updated apparently
     :param timeout:
     :param precision_param:
     :param epochs: amount of training runs
     :param lr:
     :return: variational energy array of all states
     """
-    # print("We zijn begonnen")
 
     start_time = time.time()
 
@@ -447,14 +428,12 @@ def trainingLoop_TQ(nspins, alpha, epochs: int, nruns = 24, timeout = 2, precisi
 
     bonds = np.array(genBonds_2D(nspins))
 
-    # determining amount of nruns --> For later adaptation, for now it's manual.
-    # ratio_arr = np.loadtxt(f"{calc_path}/accuracy/precision_{precision_param}/magn_filt_ratio_{alpha}_{nruns}.csv",delimiter=",")
-
     # keeping track of some values
     varEngVal_arr = []
     amount_of_samples_arr = []
 
-    for epoch_ind in tqdm(range(epochs)):
+    progbar = tqdm(range(epochs))
+    for epoch_ind in progbar:
 
         # for determining time per sample
         epoch_start = time.time()
@@ -473,8 +452,10 @@ def trainingLoop_TQ(nspins, alpha, epochs: int, nruns = 24, timeout = 2, precisi
             filt_states.extend(TQ_states_filtered)
 
 
+        # keeping track of the amount of filtered samples and updating nruns to match 2000 samples
         amount_of_filt_samples = len(filt_states)
         amount_of_samples_arr.append(amount_of_filt_samples)
+
 
         # SR
         weightsGrad, biasGrad, _, varEngVal = stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, np.array(filt_states), alpha, epoch_ind)
@@ -488,12 +469,10 @@ def trainingLoop_TQ(nspins, alpha, epochs: int, nruns = 24, timeout = 2, precisi
         weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins, alpha)
         weightsIsing, biasIsing = varPar_to_Ising(weightsFull, biasFull)
 
-        # nan happens when RunTimeWarning and overflow, disabling this for efficiency
-        # if math.isnan(varEngVal_arr[0]):
-        #     break
         np.savetxt(f"{storeVal_path}/varEngVal_arr/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", varEngVal_arr, delimiter = ",")
 
-
+        # nruns = new_nruns
+        progbar.set_description(f"varEng = {varEngVal}")
 
     # calculating total runtime
     end_time = time.time()
@@ -546,10 +525,10 @@ def trainingLoop_TQ(nspins, alpha, epochs: int, nruns = 24, timeout = 2, precisi
 #     # weightsRBM is 64 x 128
 #
 #     # return getVarEngVal_new_calculation_test(nspins,alpha,timeout,nruns,ising_params_id,precision_param)
+# print(tryout_new_logWaveFunc(16, 2, 2, 32, 0, False, 'high'))
 #     # return locEng_arr
 
 
-# print(tryout_new_logWaveFunc(16, 2, 2, 32, 0, False, 'high'))
 def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
     for timeout_ind in tqdm(timeout_ls):
         for alpha_ind in tqdm(alpha_ls):
@@ -566,29 +545,6 @@ def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
                 # np.savetxt(f"{calc_path}/accuracy/precision_{precision_param}/relErr_vs_timeout/relErr_{nspins_ind}_{alpha_ind}_{nruns}.csv",
                 #            relErr_arr, delimiter=",")
 
-def some_func(n, a, ip_id):
-    """ Calculates logWaveFunc for all filtered states
-
-    :param n:
-    :param a:
-    :param ip_id:
-    :return:
-    """
-    states = np.loadtxt(f"{calc_path}/filt_states/precision_high/vis_states_filt_{n}_{a}_2_32.csv", delimiter = ",")
-    weightsIsing, biasIsing = load_weights_and_bias(n, a, ip_id)
-    weightsRBM, biasRBM = varPar_to_RBM(weightsIsing, biasIsing, n, a)
-    val_arr = []
-    for state_ind in tqdm(range(len(states))):
-        val_arr.append(logWaveFunc(states[state_ind], weightsRBM, biasRBM))
-
-    return  val_arr
-# 1.0890541076660156
-# start = time.time()
-# print(f"somefunc: {some_func(16,2,0)}")
-# end = time.time()
-#
-# print(end-start)
-
 def calcRelErr_QMC(nspins_ls, alpha, epochs):
     relErr_arr = []
     varEng_arr = []
@@ -601,13 +557,11 @@ def calcRelErr_QMC(nspins_ls, alpha, epochs):
 
     return relErr_arr, varEng_arr
 
-# print(calcRelErr_QMC(nspins_ls, 4, 300))
 # print(calcRelErr_QMC([16,36,64], 2, 300))
 
 
 
-trainingLoop_TQ(484, 2, 300)
-# trainingLoop_TQ(64, 2, 5)
+print(trainingLoop_TQ(36, 2, 300))
 
 
 
