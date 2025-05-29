@@ -5,8 +5,6 @@ from numba import njit, jit
 
 from TitanQ import base_path, calc_path, param_path, bonds_path, TitanQFunc, magn_filt
 from Mask_2D import bias_map, generate_W_mask, weight_map_numba
-# from SideCalculations import fast_matmul
-# from main import varPar_to_Ising, getStates
 
 @njit
 def logWaveFunc(state, weightsRBM, biasRBM):
@@ -345,48 +343,3 @@ def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, a
     grad = S_kk_inv @ Fk
     # print(f"grad: {grad}")
     return grad[:alpha * nspins].reshape(nspins, alpha), grad[alpha * nspins:], expVal_locEng, expVal_locEng / (4 * nspins)
-
-# def training_loop_old(
-#     N: int,
-#     alpha: int,
-#     epoch: int = 25,
-#     lr: float = 1e-3
-# ):
-#     """ Training loop
-#
-#     Args:
-#         N (int): the number of spins inside the 1D Heisenberg spin chain
-#         alpha (int): alpha
-#         epoch (int, optional): the number of epochs, default 25.
-#         lr (int, optional): the learning rate, default 1e-3.
-#     """
-#     # initialize the independent weights and biases
-#     weightsIndep = np.random.normal(scale=1e-4, size=(N, alpha))
-#     biasIndep = np.random.normal(scale=1e-4, size=(alpha))
-#
-#     # setup the bonds
-#     bonds = genBonds(N)
-#
-#     pbar = tqdm(range(epoch))
-#     varEngVal_arr = np.zeros(epoch)
-#
-#     # do epoch epochs
-#     for i in pbar:
-#         weightsGrad, biasGrad, E = stochReconfig(weightsIndep, biasIndep, bonds)
-#         varEngVal_arr[i] = E
-#
-#         # update the independent variational parameters
-#         weightsIndep -= lr * weightsGrad
-#         biasIndep -= lr * biasGrad
-#         pbar.set_description(f"E_var = {E}")
-#
-#     # return the variational parameters and the variational energy per epoch
-#     return weightsIndep, biasIndep, varEngVal_arr
-
-
-
-#
-# weightsIndep = np.random.normal(scale=1e-4, size=(14, 10))
-# biasIndep = np.random.normal(scale=1e-4, size=(10))
-# weights, _, bias, _ = getFullVarPar(weightsIndep, biasIndep)
-# print(f"tl: {trainingLoop(14, 10, thermalisation(100,weights, bias))[-1]}")

@@ -301,8 +301,8 @@ def makePlot_relErr_vs_timeout_split_states(nspins_ls, alpha, timeout_ls,nruns, 
         return mpl.colors.to_hex((1 - mix) * c1 + mix * c2)
 
     #defining the two colours
-    c1 = 'red'  # blue
-    c2 = 'yellow'  # green
+    c1 = '#182D66'  # blue
+    c2 = '#BEF9FA'  # green
 
     # relErr_arr = []
     nspins_counter = 1
@@ -315,7 +315,7 @@ def makePlot_relErr_vs_timeout_split_states(nspins_ls, alpha, timeout_ls,nruns, 
 
         avg_relErr_arr = np.mean(relErr_arr, axis = 0)
         stdev_relErr_arr = np.std(relErr_arr, axis = 0)
-        plt.errorbar(timeout_ls, avg_relErr_arr, yerr = stdev_relErr_arr, capsize = 6, color=colorFader(c1, c2, nspins_counter / len(nspins_ls)), label=f'n = {nspins_ind}')
+        plt.errorbar(timeout_ls, avg_relErr_arr, yerr = stdev_relErr_arr, capsize = 4, color=colorFader(c1, c2, nspins_counter / len(nspins_ls)), label=f'n={nspins_ind}')
         nspins_counter += 1
 
     # aesthetics
@@ -324,11 +324,11 @@ def makePlot_relErr_vs_timeout_split_states(nspins_ls, alpha, timeout_ls,nruns, 
     plt.xticks([0.1,2,4,10,16, 24])
     plt.xlabel("timeout (s)")
     plt.ylabel("Relative error")
-    plt.title(r"$\alpha$" + f"={alpha}, runs = {nruns}")
+    plt.title(r"$\alpha$" + f"={alpha}, runs={nruns}")
     plt.legend()
 
     # saving and showing the figure
-    # plt.savefig(f"{calc_path}/accuracy/precision_high/relErr_vs_timeout_split_{alpha}_{nruns}_lower_timeout_values.png", bbox_inches='tight')
+    plt.savefig(f"{calc_path}/accuracy/precision_high/relErr_vs_timeout_split_{alpha}_{nruns}_lower_timeout_values.png", bbox_inches='tight')
     figcount += 1
     plt.show()
 
@@ -336,15 +336,21 @@ def makePlot_magn_filt_ratio(nspins_ls, alpha, timeout_ls, nruns, precision_para
     figcount = 1
     plt.figure(figcount)
 
+    def colorFader(c1, c2, mix=0):  # fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+        c1 = np.array(mpl.colors.to_rgb(c1))
+        c2 = np.array(mpl.colors.to_rgb(c2))
+        return mpl.colors.to_hex((1 - mix) * c1 + mix * c2)
 
-
+    #defining the two colours
+    c1 = '#182D66'
+    c2 = '#BEF9FA'
 
     ratio_arr = np.loadtxt(f"{calc_path}/accuracy/precision_{precision_param}/magn_filt_ratio_{alpha}_{nruns}.csv",delimiter=",")
-
+    nspins_counter = 1
     for ratio_ind in range(len(ratio_arr)):
 
-        plt.plot(nspins_ls, ratio_arr[ratio_ind], label = f"t={timeout_ls[ratio_ind]}")
-
+        plt.plot(nspins_ls, ratio_arr[ratio_ind], color=colorFader(c1, c2, nspins_counter / len(nspins_ls)), label = f"t={timeout_ls[ratio_ind]}")
+        nspins_counter += 1
     plt.xticks(nspins_ls)
     plt.xlabel("nspins")
     plt.ylabel("Magnetic filter ratio")
@@ -353,6 +359,8 @@ def makePlot_magn_filt_ratio(nspins_ls, alpha, timeout_ls, nruns, precision_para
     plt.savefig(f"{calc_path}/accuracy/precision_high/magn_filt_ratio_{alpha}_{nruns}.png", bbox_inches='tight')
     figcount += 1
     plt.show()
+
+makePlot_magn_filt_ratio(nspins_ls, 4, timeout_ls, 32, 'high')
 
 # def makePlot_hist_training_varEng(nspins, alpha, epochs):
 #     # check how many files of this configuration exist already
@@ -410,8 +418,6 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
     # plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEngVal_Evo_{nspins}_{alpha}_{epochs}.png")
 
     plt.show()
-# makePlot_training_varEngVal(16,2,300)
-
 
 def makePlot_training_varEngVal_copy(nspins, alpha, epochs):
 
@@ -461,29 +467,40 @@ def makePlot_training_varEngVal_copy(nspins, alpha, epochs):
 
     plt.show()
 
-# makePlot_training_varEngVal_copy(16, 2, 300)
-
 QMC_eng = [-0.701777,-0.678873,-0.673487 ]
-# makePlot_hist_training_varEng(16,2,10)
 
 def makePlot_locEng_speedup(alpha, timeout, nruns, precision_param):
 
     num_filt_samples_arr = [8984,5986,4326,3389,2517,2022,1969]
-    runtime_new = np.zeros((len(nspins_ls)))
-    runtime = np.zeros((len(nspins_ls)))
+    runtime_new_avg = np.zeros((len(nspins_ls)))
+    runtime_new_std = np.zeros((len(nspins_ls)))
+    runtime_avg = np.zeros((len(nspins_ls)))
+    runtime_std = np.zeros((len(nspins_ls)))
+
     for i in range(len(nspins_ls)):
-        with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_new_{nspins_ls[i]}_{alpha}_{timeout}_{nruns}.json", 'r') as file:
-            data_new = json.load(file)
-        runtime_new[i]=(data_new['runtime'] / num_filt_samples_arr[i])
-        with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins_ls[i]}_{alpha}_{timeout}_{nruns}.json", 'r') as file:
-            data = json.load(file)
-        runtime[i]=(data['runtime'] / num_filt_samples_arr[i])
+        time_per_nspin_new = np.zeros((4))
+        time_per_nspin = np.zeros((4))
+        for run_ind in range(4):
+            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_new_{nspins_ls[i]}_{alpha}_{timeout}_{nruns}_{run_ind+2}of5.json", 'r') as file:
+                data_new = json.load(file)
+
+            time_per_nspin_new[run_ind] = (data_new['runtime'] / num_filt_samples_arr[i])
+
+            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins_ls[i]}_{alpha}_{timeout}_{nruns}_{run_ind+2}of5.json", 'r') as file:
+                data = json.load(file)
+            time_per_nspin[run_ind]=(data['runtime'] / num_filt_samples_arr[i])
+
+        runtime_new_avg[i] = np.mean(time_per_nspin_new)
+        runtime_new_std[i] = np.std(time_per_nspin_new)
+        runtime_avg[i] = np.mean(time_per_nspin)
+        runtime_std[i] = np.std(time_per_nspin)
+
 
     x = nspins_ls
 
     plt.figure()
-    plt.plot(x, runtime, label = "Old")
-    plt.plot(x, runtime_new,  label = "New (look-up table)")
+    plt.errorbar(x, runtime_avg, yerr=runtime_std, capsize = 4,label="Old")
+    plt.errorbar(x, runtime_new_avg, yerr=runtime_new_std, capsize = 4, label="New (look-up table)")
     plt.yscale('log')
     plt.xticks(x)
     plt.xlabel("nspins")
@@ -494,4 +511,24 @@ def makePlot_locEng_speedup(alpha, timeout, nruns, precision_param):
     plt.savefig(f"{calc_path}/varEng/locEng_calc_methods_comp.png")
     plt.show()
 
-makePlot_locEng_speedup(2, 2, 32, 'high')
+def makePlot_sketch_timeout():
+
+    x=np.arange(0,10,0.01)
+    y=np.exp(-(x-2))+0.5
+    y_2 = 0.5
+
+
+
+    plt.figure()
+    plt.plot(x, y, label="TitanQ")
+    plt.axhline(0.5, color = 'r', alpha = 0.5, label ="balancing line")
+    plt.xlabel("Time / samples")
+    plt.ylabel("Energy of state")
+    plt.title("Sketch of thermalisation of TitanQ")
+    plt.legend()
+    plt.gca().axes.get_yaxis().set_ticklabels([])
+    plt.gca().axes.get_xaxis().set_ticklabels([])
+    plt.savefig(f"{calc_path}/Thermalisation_sketch.png")
+    plt.show()
+
+

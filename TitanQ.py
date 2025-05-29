@@ -14,7 +14,7 @@ load_dotenv()
 TITANQ_DEV_API_KEY = os.getenv("TITANQ_DEV_API_KEY")
 get_credits_summary(TITANQ_DEV_API_KEY)
 
-#fill in your own base_path
+#fill in your own base_path (in
 base_path = os.getenv("BASE_PATH")
 calc_path = f"{base_path}/calculations"
 param_path = f"{base_path}/ising_params"
@@ -114,7 +114,6 @@ def TitanQFunc(nspins, alpha, weightsIsing, biasIsing, timeout, precision_param,
 
     #returns 1) Full state   2) Visible state    3) energy from titanQ   4) calculated Boltzmann energy  5) Samples taken 6) coupling constant, 7) precision of the sampling
     return full_output, visible_output, energy_output, energies_calculated, samps_taken,num_engines, num_chains, coupling_mult, str(myPrecision)
-
 
 def magn_filt(nspins, alpha, timeout, nruns, precision_param, TQ_states = [], useTQ = False):
     '''
@@ -229,8 +228,3 @@ def magn_filt_ratio_compare(nspins_ls, alpha, timeout_ls, nruns, precision_param
 
         complete_ratio_arr.append(ratio_arr)
     np.savetxt(f"{calc_path}/accuracy/precision_{precision_param}/magn_filt_ratio_{alpha}_{nruns}.csv", complete_ratio_arr, delimiter = ",")
-
-# alpha_ls = [2,4]
-
-# print(TITANQ_DEV_API_KEY)
-# print(base_path)
