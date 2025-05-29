@@ -466,4 +466,32 @@ def makePlot_training_varEngVal_copy(nspins, alpha, epochs):
 QMC_eng = [-0.701777,-0.678873,-0.673487 ]
 # makePlot_hist_training_varEng(16,2,10)
 
+def makePlot_locEng_speedup(alpha, timeout, nruns, precision_param):
 
+    num_filt_samples_arr = [8984,5986,4326,3389,2517,2022,1969]
+    runtime_new = np.zeros((len(nspins_ls)))
+    runtime = np.zeros((len(nspins_ls)))
+    for i in range(len(nspins_ls)):
+        with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_new_{nspins_ls[i]}_{alpha}_{timeout}_{nruns}.json", 'r') as file:
+            data_new = json.load(file)
+        runtime_new[i]=(data_new['runtime'] / num_filt_samples_arr[i])
+        with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins_ls[i]}_{alpha}_{timeout}_{nruns}.json", 'r') as file:
+            data = json.load(file)
+        runtime[i]=(data['runtime'] / num_filt_samples_arr[i])
+
+    x = nspins_ls
+
+    plt.figure()
+    plt.plot(x, runtime, label = "Old")
+    plt.plot(x, runtime_new,  label = "New (look-up table)")
+    plt.yscale('log')
+    plt.xticks(x)
+    plt.xlabel("nspins")
+    plt.ylabel("Computation time per filtered sample (s)")
+    plt.title("Computational advantage of using lookup table")
+    plt.grid()
+    plt.legend()
+    plt.savefig(f"{calc_path}/varEng/locEng_calc_methods_comp.png")
+    plt.show()
+
+makePlot_locEng_speedup(2, 2, 32, 'high')
