@@ -228,7 +228,7 @@ def getVarEngVal(nspins, alpha, timeout, nruns, ising_params_id, precision_param
             "locEngValues": locEngVal_arr
      }
 
-        with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_new_{nspins}_{alpha}_{timeout}_{nruns}_{run_ind+2}of5.json",'w') as file:
+        with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}_{run_ind+2}of5.json",'w') as file:
             json.dump(Data, file)
 
     # else:
