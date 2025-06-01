@@ -254,7 +254,7 @@ def calcLocEng(state, alpha, bonds, weights, bias):
 
 @njit
 def calcLocEng_new(state, alpha, bonds, weightsRBM, biasRBM):
-    """ Faster way (w.r.t. calcLocEng) of calculating the local energy (and therefore the variational energy)
+    """ Faster way (w.r.t. calcLocEng) of calculating the local energy (and therefore the variational energy) with use of a lookup table.
     :param state:
     :param alpha:
     :param bonds:

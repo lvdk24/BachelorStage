@@ -194,42 +194,42 @@ def getVarEngVal(nspins, alpha, timeout, nruns, ising_params_id, precision_param
     :return: returns array with variational energy from 512 * nruns states. To compare to varEng distribution from UltraFast.
     '''
 
-    for i in range(4):
-        start_time = time.time()
-        varEngVal_arr = []
-        locEngVal_arr = []
 
-        # # check if file already exists.
-        # if not os.path.isfile(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv"):
-        TQ_filt_states = np.loadtxt(f"{calc_path}/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv", delimiter = ",")
+    start_time = time.time()
+    varEngVal_arr = []
+    locEngVal_arr = []
 
-        # get the ising parameters and transform to RBM parameters
-        weightsIsing, biasIsing = load_weights_and_bias(nspins, alpha, ising_params_id)
-        weightsRBM, biasRBM = varPar_to_RBM(weightsIsing, biasIsing, nspins, alpha)
+    # # check if file already exists. (currently inactive)
+    # if not os.path.isfile(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv"):
+    TQ_filt_states = np.loadtxt(f"{calc_path}/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv", delimiter = ",")
 
-        # get corresponding lattice bonds
-        bonds = np.array(genBonds_2D(nspins))
+    # get the ising parameters and transform to RBM parameters
+    weightsIsing, biasIsing = load_weights_and_bias(nspins, alpha, ising_params_id)
+    weightsRBM, biasRBM = varPar_to_RBM(weightsIsing, biasIsing, nspins, alpha)
 
-        # calculate variational energy and create array for all states
-        for states_ind in tqdm(range(len(TQ_filt_states))):
-            locEng = calcLocEng(np.array(TQ_filt_states[states_ind]), alpha, bonds, weightsRBM, biasRBM)
-            varEngVal_arr.append( locEng / (4 * nspins) )
-            locEngVal_arr.append( locEng )
+    # get corresponding lattice bonds
+    bonds = np.array(genBonds_2D(nspins))
 
-        end_time = time.time()
-        runtime = end_time - start_time
-        # np.savetxt(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv",varEngVal_arr, delimiter = ",")
-        # np.savetxt(f"{calc_path}/locEng/precision_{precision_param}/locEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", locEngVal_arr, delimiter=",")
+    # calculate variational energy and create array for all states
+    for states_ind in tqdm(range(len(TQ_filt_states))):
+        locEng = calcLocEng_new(np.array(TQ_filt_states[states_ind]), alpha, bonds, weightsRBM, biasRBM)
+        varEngVal_arr.append( locEng / (4 * nspins) )
+        locEngVal_arr.append( locEng )
+
+    end_time = time.time()
+    runtime = end_time - start_time
+    # np.savetxt(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv",varEngVal_arr, delimiter = ",")
+    # np.savetxt(f"{calc_path}/locEng/precision_{precision_param}/locEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", locEngVal_arr, delimiter=",")
 
 
-        Data = {
-            "runtime": runtime,
-            "varEngValues": varEngVal_arr,
-            "locEngValues": locEngVal_arr
-     }
-
-        with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}_{i+1}of4.json",'w') as file:
-            json.dump(Data, file)
+     #    Data = {
+     #        "runtime": runtime,
+     #        "varEngValues": varEngVal_arr,
+     #        "locEngValues": locEngVal_arr
+     # }
+     #
+     #    with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_new_{nspins}_{alpha}_{timeout}_{nruns}_{i+1}of4.json",'w') as file:
+     #        json.dump(Data, file)
 
     # else:
     #     varEngVal_arr=np.loadtxt(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", delimiter = ",")
@@ -238,8 +238,8 @@ def getVarEngVal(nspins, alpha, timeout, nruns, ising_params_id, precision_param
     #     return np.array(varEngVal_arr), np.array(locEngVal_arr)
     return np.array(varEngVal_arr), np.array(locEngVal_arr)
 
-for nspins in nspins_ls:
-    getVarEngVal(nspins, 4,2,32,0,'high')
+# for nspins in nspins_ls:
+#     getVarEngVal(nspins, 4,2,32,0,'high')
 
 def getVarEngVal_split_states(nspins, alpha, timeout, nruns, ising_params_id, precision_param, split_bins=4):
     ''' Uses the filtered states
@@ -382,7 +382,7 @@ def calcRelErr_vs_nspins(nspins_ls, alpha, timeout, nruns, precision_param):
 
     return relErr_arr
 
-def trainingLoop_TQ(nspins, alpha, epochs: int, nruns = 30, timeout = 2, precision_param = 'high', lr: float = 5e-3, num_engines = 512):
+def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns = 30, timeout = 2, precision_param = 'high', lr: float = 5e-3, num_engines = 512):
     """
 
     :param nspins:
@@ -477,6 +477,8 @@ def trainingLoop_TQ(nspins, alpha, epochs: int, nruns = 30, timeout = 2, precisi
         json.dump(varEng_Evolution, file)
 
     return varEngVal,varEngVal_arr, weightsRBM, biasRBM, epochs
+
+print(trainingLoop_TQ(36,2,300))
 
 def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
     for timeout_ind in tqdm(timeout_ls):

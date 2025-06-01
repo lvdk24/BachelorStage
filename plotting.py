@@ -301,8 +301,8 @@ def makePlot_relErr_vs_timeout_split_states(nspins_ls, alpha, timeout_ls,nruns, 
         return mpl.colors.to_hex((1 - mix) * c1 + mix * c2)
 
     #defining the two colours
-    c1 = '#182D66'  # blue
-    c2 = '#BEF9FA'  # green
+    c1 = '#182D66'
+    c2 = '#BEF9FA'
 
     # relErr_arr = []
     nspins_counter = 1
@@ -360,7 +360,7 @@ def makePlot_magn_filt_ratio(nspins_ls, alpha, timeout_ls, nruns, precision_para
     figcount += 1
     plt.show()
 
-makePlot_magn_filt_ratio(nspins_ls, 4, timeout_ls, 32, 'high')
+# makePlot_magn_filt_ratio(nspins_ls, 4, timeout_ls, 32, 'high')
 
 # def makePlot_hist_training_varEng(nspins, alpha, epochs):
 #     # check how many files of this configuration exist already
@@ -469,24 +469,38 @@ def makePlot_training_varEngVal_copy(nspins, alpha, epochs):
 
 QMC_eng = [-0.701777,-0.678873,-0.673487 ]
 
-def makePlot_locEng_speedup(alpha, timeout, nruns, precision_param):
+def makePlot_locEng_speedup(timeout, nruns, precision_param):
 
-    num_filt_samples_arr = [8984,5986,4326,3389,2517,2022,1969]
+    # initializing for alpha = 2
+    num_filt_samples_arr = [8984,5986,4326,3389,2517,2022,1969] # alpha = 2
+
     runtime_new_avg = np.zeros((len(nspins_ls)))
     runtime_new_std = np.zeros((len(nspins_ls)))
     runtime_avg = np.zeros((len(nspins_ls)))
     runtime_std = np.zeros((len(nspins_ls)))
 
+    # initializing for alpha = 4
+    num_filt_samples_arr_4 = [11090, 10079, 7829, 5348, 3566, 2748, 3010]  # alpha = 4
+    runtime_new_avg_4 = np.zeros((len(nspins_ls)))
+    runtime_new_std_4 = np.zeros((len(nspins_ls)))
+    runtime_avg_4 = np.zeros((len(nspins_ls)))
+    runtime_std_4 = np.zeros((len(nspins_ls)))
+
+    c1 = '#182D66'
+    c2 = '#B1DAE3'
+
     for i in range(len(nspins_ls)):
+
+        # for alpha = 2
         time_per_nspin_new = np.zeros((4))
         time_per_nspin = np.zeros((4))
         for run_ind in range(4):
-            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_new_{nspins_ls[i]}_{alpha}_{timeout}_{nruns}_{run_ind+2}of5.json", 'r') as file:
+            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_new_{nspins_ls[i]}_2_{timeout}_{nruns}_{run_ind+2}of5.json", 'r') as file:
                 data_new = json.load(file)
 
             time_per_nspin_new[run_ind] = (data_new['runtime'] / num_filt_samples_arr[i])
 
-            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins_ls[i]}_{alpha}_{timeout}_{nruns}_{run_ind+2}of5.json", 'r') as file:
+            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins_ls[i]}_2_{timeout}_{nruns}_{run_ind+2}of5.json", 'r') as file:
                 data = json.load(file)
             time_per_nspin[run_ind]=(data['runtime'] / num_filt_samples_arr[i])
 
@@ -495,21 +509,43 @@ def makePlot_locEng_speedup(alpha, timeout, nruns, precision_param):
         runtime_avg[i] = np.mean(time_per_nspin)
         runtime_std[i] = np.std(time_per_nspin)
 
+        # for alpha = 4
+        time_per_nspin_new_4 = np.zeros((4))
+        time_per_nspin_4 = np.zeros((4))
+
+        for run_ind in range(4):
+            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_new_{nspins_ls[i]}_4_{timeout}_{nruns}_{run_ind+1}of4.json", 'r') as file:
+                data_new = json.load(file)
+
+            time_per_nspin_new_4[run_ind] = (data_new['runtime'] / num_filt_samples_arr_4[i])
+
+            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins_ls[i]}_4_{timeout}_{nruns}_{run_ind+1}of4.json", 'r') as file:
+                data = json.load(file)
+            time_per_nspin_4[run_ind]=(data['runtime'] / num_filt_samples_arr_4[i])
+
+        runtime_new_avg_4[i] = np.mean(time_per_nspin_new_4)
+        runtime_new_std_4[i] = np.std(time_per_nspin_new_4)
+        runtime_avg_4[i] = np.mean(time_per_nspin_4)
+        runtime_std_4[i] = np.std(time_per_nspin_4)
 
     x = nspins_ls
 
     plt.figure()
-    plt.errorbar(x, runtime_avg, yerr=runtime_std, capsize = 4,label="Old")
-    plt.errorbar(x, runtime_new_avg, yerr=runtime_new_std, capsize = 4, label="New (look-up table)")
+    plt.errorbar(x, runtime_avg, yerr=runtime_std, capsize = 4,color = c1, linestyle = 'dotted', label="Old, " + r"$\alpha$" + f"={2}")
+    plt.errorbar(x, runtime_new_avg, yerr=runtime_new_std, capsize = 4, color = c2, linestyle='dotted', label="New (look-up table), " + r"$\alpha$" + f"={2}")
+    plt.errorbar(x, runtime_avg_4, yerr=runtime_std_4, alpha = 0.8, capsize=4, color=c1, lw = 0.8, label="Old, " + r"$\alpha$" + f"={4}")
+    plt.errorbar(x, runtime_new_avg_4, yerr=runtime_new_std_4, alpha = 0.8, capsize=4, color=c2, lw = 0.8, label="New (look-up table), " + r"$\alpha$" + f"={4}")
     plt.yscale('log')
     plt.xticks(x)
     plt.xlabel("nspins")
     plt.ylabel("Computation time per filtered sample (s)")
     plt.title("Computational advantage of using lookup table")
-    plt.grid()
+    plt.grid(alpha = 0.5)
     plt.legend()
     plt.savefig(f"{calc_path}/varEng/locEng_calc_methods_comp.png")
     plt.show()
+
+# makePlot_locEng_speedup(2,32,'high')
 
 def makePlot_sketch_timeout():
 
@@ -517,11 +553,11 @@ def makePlot_sketch_timeout():
     y=np.exp(-(x-2))+0.5
     y_2 = 0.5
 
-
+    c1 = '#182D66'
 
     plt.figure()
-    plt.plot(x, y, label="TitanQ")
-    plt.axhline(0.5, color = 'r', alpha = 0.5, label ="balancing line")
+    plt.plot(x, y, color = c1, label="TitanQ")
+    plt.axhline(0.5, color = c1, linestyle = 'dashed', alpha = 0.5, label ="balancing line")
     plt.xlabel("Time / samples")
     plt.ylabel("Energy of state")
     plt.title("Sketch of thermalisation of TitanQ")
@@ -531,4 +567,38 @@ def makePlot_sketch_timeout():
     plt.savefig(f"{calc_path}/Thermalisation_sketch.png")
     plt.show()
 
+def makePlot_timeProjection(timeout):
+    # data = np.loadtxt(f"{base_path}/projections-MH-Ising-FPGA-Conservative-Optimistic.csv", delimiter = ",", skiprows=8)
+    x = [16,36,64,100,144,196,256,324,400,484]
+    x_2 = nspins_ls
+    UF_arr =[1.4949295699999999e-05, 7.1075944e-05,0.00022066767475,0.0005290877813499999,0.0010919345298999999,0.0019848194393499996,0.0034447283587,0.00549388198105,0.00833878898185,0.0122014823203]
+    UF_std_arr = [1.281692194360984e-07,2.400770237115583e-07,6.494463287045599e-07,1.4500511100564922e-06,4.320382517891083e-06,2.814837831438282e-05,1.0121735126975576e-05,2.8951505016686948e-05,2.0626871011086402e-05,3.696280205298863e-05]
+    AMD_CPU_arr = [2.32208e-05,4.30732e-05,7.335889999999999e-05,0.0001188876999999,0.0001779929,0.00026363,0.0004181758999999,0.0005511653,0.0008196583999999,0.0009001752]
+    AMD_CPU_std_arr = [4.675192402457892e-07,1.1130921674925817e-06,1.3209464489944735e-06,1.02022656579583e-06,1.4597906200700317e-06,1.896803053092814e-06,4.331791206238412e-06,1.96672323675702e-06,3.480220520471524e-06,4.301251506113593e-05]
+    P100_arr = [0.0020051717758178,0.0018929004669189,0.0020303964614868,0.0019014120101928,0.0018664121627807,0.001814579963684,0.0018901824951171,0.001854920387268,0.0017940282821655,0.0018584489822387]
+    P100_std_arr = [8.967076731630589e-05,2.5812956107875793e-05,0.0001342126231056,2.707318407289117e-05,2.547394760338819e-05,1.811058837245438e-05,3.723920464327483e-05,1.7795833117330174e-05,1.1623652208707043e-05,2.139123740028496e-05]
 
+    # mag0_ratio_tot = np.loadtxt(f"{calc_path}/accuracy/precision_high/magn_filt_ratio_2_32.csv")
+
+    mag0_ratio = [5.483398437500000000e-01,3.653564453125000000e-01,2.640380859375000000e-01,2.068481445312500000e-01,1.536254882812500000e-01,1.234130859375000000e-01,1.201782226562500000e-01]
+    time_sample_TitanQ = []
+    for i in range(len(mag0_ratio)):
+        time_sample_TitanQ.append( timeout / ( 512 * mag0_ratio[i] ) )
+        #bij deze hoort x_2
+
+    plt.figure()
+    plt.errorbar(x, UF_arr, yerr = UF_std_arr, capsize = 4, label = "UltraFast")
+    plt.errorbar(x, AMD_CPU_arr, yerr=AMD_CPU_std_arr, capsize = 4, label="AMD CPU")
+    plt.errorbar(x, P100_arr, yerr=P100_std_arr, capsize = 4, label="P100")
+    plt.plot(x_2, time_sample_TitanQ, label="TitanQ")
+    plt.yscale('log')
+    plt.xticks(x)
+    plt.xlabel("spins")
+    plt.ylabel("Time per sweep (s)")
+    plt.title("Time per sample for different hardware, " + r"$\alpha$" + f"=2")
+    plt.legend()
+    plt.grid(alpha = 0.5)
+    plt.show()
+makePlot_timeProjection(2)
+# UF_arr =[1.4949295699999999e-05, 7.1075944e-05,0.00022066767475,0.0005290877813499999,0.0010919345298999999,0.0019848194393499996,0.0034447283587,0.00549388198105,0.00833878898185,0.0122014823203]
+# print(type(UF_arr[0]))
