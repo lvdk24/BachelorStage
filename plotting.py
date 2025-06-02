@@ -447,10 +447,13 @@ def makePlot_training_varEngVal_copy(nspins, alpha, epochs):
     #
     # plt.show()
 
+    QMC_eng = [-0.701777, -0.678873, -0.673487, 0.671549] #16 t/m 100
+
     fig, ax1 = plt.subplots(figsize=(8, 8))
     ax2 = ax1.twinx()
 
     ax1.plot(x, varEngVal_arr, color=varEng_col, lw=3)
+    ax1.axhline(QMC_eng[nspins_ls.index(nspins)],label = "QMC Eng")
     ax2.plot(x, filt_samp_arr, color=filt_col, lw=4)
 
     ax1.set_xlabel("Epochs")
@@ -463,11 +466,13 @@ def makePlot_training_varEngVal_copy(nspins, alpha, epochs):
     fig.suptitle("VarEng & filt samples vs epochs", fontsize=20)
     fig.autofmt_xdate()
 
-    plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEngVal_Evo_and_filtSamps_{nspins}_{alpha}_{epochs}.png")
+    # plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEngVal_Evo_and_filtSamps_{nspins}_{alpha}_{epochs}.png")
 
     plt.show()
 
-QMC_eng = [-0.701777,-0.678873,-0.673487 ]
+makePlot_training_varEngVal_copy(36,2,300)
+
+QMC_eng = [-0.701777,-0.678873,-0.673487,0.671549]
 
 def makePlot_locEng_speedup(timeout, nruns, precision_param):
 
@@ -599,6 +604,6 @@ def makePlot_timeProjection(timeout):
     plt.legend()
     plt.grid(alpha = 0.5)
     plt.show()
-makePlot_timeProjection(2)
+
 # UF_arr =[1.4949295699999999e-05, 7.1075944e-05,0.00022066767475,0.0005290877813499999,0.0010919345298999999,0.0019848194393499996,0.0034447283587,0.00549388198105,0.00833878898185,0.0122014823203]
 # print(type(UF_arr[0]))

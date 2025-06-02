@@ -12,7 +12,7 @@ load_dotenv()
 
 #needed to use TitanQ
 TITANQ_DEV_API_KEY = os.getenv("TITANQ_DEV_API_KEY")
-get_credits_summary(TITANQ_DEV_API_KEY)
+print(get_credits_summary(TITANQ_DEV_API_KEY))
 
 #fill in your own base_path (in
 base_path = os.getenv("BASE_PATH")

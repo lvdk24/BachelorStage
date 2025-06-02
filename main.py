@@ -382,7 +382,7 @@ def calcRelErr_vs_nspins(nspins_ls, alpha, timeout, nruns, precision_param):
 
     return relErr_arr
 
-def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns = 30, timeout = 2, precision_param = 'high', lr: float = 5e-3, num_engines = 512):
+def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns_init = 50, timeout = 2, precision_param = 'high', lr: float = 5e-3, num_engines = 512):
     """
 
     :param nspins:
@@ -397,6 +397,8 @@ def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns = 30, timeout = 
 
     start_time = time.time()
 
+    nruns = nruns_init
+
     # initialise random RBM parameters
     weightsRBM = np.random.normal(scale=1e-4, size=(nspins, alpha))
     biasRBM = np.random.normal(scale=1e-4, size=(alpha))
@@ -410,6 +412,7 @@ def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns = 30, timeout = 
     # keeping track of some values
     varEngVal_arr = []
     amount_of_samples_arr = []
+    nruns_arr = []
 
     progbar = tqdm(range(epochs))
     for epoch_ind in progbar:
@@ -417,13 +420,15 @@ def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns = 30, timeout = 
         # for determining time per sample
         epoch_start = time.time()
 
+        nruns_arr.append(nruns)
+
         filt_states = []
         for _ in range(nruns):
             # get array of visible states from TitanQ
             _, TQ_visStates_oneRow, _, _, _, _, _, _, _ = TitanQFunc(nspins, alpha, weightsIsing, biasIsing, timeout, precision_param)
 
             # reshaping and forming the visible states from array into list
-            TQ_visStates_array = TQ_visStates_oneRow.reshape(512, nspins)
+            TQ_visStates_array = TQ_visStates_oneRow.reshape(num_engines, nspins)
             TQ_visStates = TQ_visStates_array.tolist()
 
             # filter the states for zero magnetization
@@ -450,7 +455,9 @@ def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns = 30, timeout = 
 
         np.savetxt(f"{storeVal_path}/varEngVal_arr/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", varEngVal_arr, delimiter = ",")
 
-        # nruns = new_nruns
+        mag_0_ratio = amount_of_filt_samples / ( nruns * num_engines )
+        new_nruns = int(2000/(num_engines * mag_0_ratio))
+        nruns = new_nruns
         progbar.set_description(f"varEng = {varEngVal}")
 
     # calculating total runtime
@@ -465,7 +472,8 @@ def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns = 30, timeout = 
         "nspins": nspins,
         "alpha": alpha,
         "epochs": epochs,
-        "nruns": nruns,
+        "nruns_init": nruns_init,
+        "nruns": nruns_arr,
         "timeout": timeout,
         "precision_param": precision_param,
         "learning_rate": lr,
@@ -478,7 +486,7 @@ def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns = 30, timeout = 
 
     return varEngVal,varEngVal_arr, weightsRBM, biasRBM, epochs
 
-print(trainingLoop_TQ(36,2,300))
+# print(trainingLoop_TQ(100,2,600))
 
 def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
     for timeout_ind in tqdm(timeout_ls):
