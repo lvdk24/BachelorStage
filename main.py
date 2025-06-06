@@ -533,5 +533,5 @@ def calcRelErr_QMC(nspins, alpha, epochs):
     return relErr_arr, varEng_arr
 
 for nspins in tqdm(nspins_ls_extension):
-    getStates(nspins, 2, 10, 1, -1, True, 'high')
+    getStates(nspins, 2, 10, 32, -1, True, 'high')
 # getStates(144, 2, 10, 1, -1, True, 'high')
