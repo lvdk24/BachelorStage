@@ -15,7 +15,7 @@ from TitanQ import TitanQFunc, load_weights_and_bias, base_path, calc_path, para
 from NQS import stochReconfig, calcLocEng, calcLocEng_new, logWaveFunc, genBonds_2D, getFullVarPar_2D
 
 nspins_ls = [16,36,64,100,196,324,484]
-nspins_ls_extension = [900,2500,4900,7225,10000]
+nspins_ls_extension = [2500,4900,7225,10000]
 alpha_ls = [2,4]
 timeout_ls = [0.1, 0.5,2,4,10,16,24]
 precision_ls = ['standard','high']
