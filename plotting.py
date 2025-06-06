@@ -5,12 +5,10 @@ import h5py
 import glob
 from tqdm import tqdm
 import json
+import pandas as pd
 
 from TitanQ import base_path, calc_path, param_path, bonds_path, magn_filt_ratio
 from main import getVarEngVal, nspins_ls, alpha_ls, timeout_ls, precision_ls, load_engVal, calcRelErr_vs_timeout, trainingLoop_TQ, storeVal_path
-
-plotting_diff_RBMEng = True
-plotting_UF_varEng = False
 
 def standardize(distribution):
     newDistribution = (distribution-np.mean(distribution))/np.std(distribution)
@@ -355,11 +353,14 @@ def makePlot_magn_filt_ratio(nspins_ls, alpha, timeout_ls, nruns, precision_para
     plt.xlabel("nspins")
     plt.ylabel("Magnetic filter ratio")
     plt.legend()
-    plt.title(f"Magnetic Filter ratio vs nspins, " + r"$\alpha$" + f"={alpha}")
-    plt.savefig(f"{calc_path}/accuracy/precision_high/magn_filt_ratio_{alpha}_{nruns}.png", bbox_inches='tight')
+    plt.title(r"$\alpha$" + f"={alpha}")
+    # plt.savefig(f"{calc_path}/accuracy/precision_high/magn_filt_ratio_{alpha}_{nruns}.png", bbox_inches='tight')
     figcount += 1
     plt.show()
 
+# makePlot_magn_filt_ratio(nspins_ls, 2, timeout_ls, 32, 'high')
+
+# makePlot_magn_filt_ratio(nspins_ls, 4, timeout_ls, 32, 'high')
 # makePlot_magn_filt_ratio(nspins_ls, 4, timeout_ls, 32, 'high')
 
 # def makePlot_hist_training_varEng(nspins, alpha, epochs):
@@ -398,26 +399,34 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
     with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'r') as file:
         varEngVal_evolution = json.load(file)
         varEngVal_arr = varEngVal_evolution['varEngVal_arr']
-        filt_samp_arr = varEngVal_evolution['varEngVal_evolution']
+        # filt_samp_arr = varEngVal_evolution['varEngVal_evolution']
 
-
+    QMC_eng = [-0.701777, -0.678873, -0.673487, 0.671549]  # 16 36 64 100
 
     plt.figure()
+
+    c1 = '#182D66'
+    # c2 = '#BEF9FA'
+
     x = np.arange(epochs)
 
-    plt.plot(x, varEngVal_arr, label = "TQ training")
-    plt.plot(x, filt_samp_arr, label = "filt ratio")
-    plt.axhline(-0.701777, color = 'r',label = "QMC_eng")
-    myTitle = f"Variational energy, n={nspins}, "+ r"$\alpha$" +f"={alpha}, " + f"epochs={epochs}"#, time/sweep={int(time_per_sweep)}s"
+    plt.plot(x, varEngVal_arr, color = c1, label = "TQ training")
+    # plt.plot(x, filt_samp_arr, label = "filt ratio")
+
+    plt.axhline(QMC_eng[nspins_ls.index(nspins)], linestyle = 'dashed', alpha = 0.5, color = c1, label="QMC Eng")
+    myTitle = f"n={nspins}, "+ r"$\alpha$" +f"={alpha}, " + f"epochs={epochs}"#, time/sweep={int(time_per_sweep)}s"
     plt.xlabel("epoch")
     plt.ylabel("Variational Energy")
     plt.legend()
     # plt.ylim(-0.75,-0.50)
     # plt.legend(loc="upper right")
     plt.title(myTitle, loc='center', wrap=True)
-    # plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEngVal_Evo_{nspins}_{alpha}_{epochs}.png")
+    plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEngVal_Evo_{nspins}_{alpha}_{epochs}.png")
 
     plt.show()
+
+# makePlot_training_varEngVal(36,2,300)
+# makePlot_training_varEngVal(16,2,300)
 
 def makePlot_training_varEngVal_copy(nspins, alpha, epochs):
 
@@ -447,7 +456,7 @@ def makePlot_training_varEngVal_copy(nspins, alpha, epochs):
     #
     # plt.show()
 
-    QMC_eng = [-0.701777, -0.678873, -0.673487, 0.671549] #16 t/m 100
+    QMC_eng = [-0.701777, -0.678873, -0.673487, 0.671549] #16 36 64 100
 
     fig, ax1 = plt.subplots(figsize=(8, 8))
     ax2 = ax1.twinx()
@@ -470,9 +479,7 @@ def makePlot_training_varEngVal_copy(nspins, alpha, epochs):
 
     plt.show()
 
-makePlot_training_varEngVal_copy(36,2,300)
-
-QMC_eng = [-0.701777,-0.678873,-0.673487,0.671549]
+# makePlot_training_varEngVal_copy(16,2,300)
 
 def makePlot_locEng_speedup(timeout, nruns, precision_param):
 
@@ -563,7 +570,7 @@ def makePlot_sketch_timeout():
     plt.figure()
     plt.plot(x, y, color = c1, label="TitanQ")
     plt.axhline(0.5, color = c1, linestyle = 'dashed', alpha = 0.5, label ="balancing line")
-    plt.xlabel("Time / samples")
+    plt.xlabel("Time or samples")
     plt.ylabel("Energy of state")
     plt.title("Sketch of thermalisation of TitanQ")
     plt.legend()
@@ -576,14 +583,28 @@ def makePlot_timeProjection(timeout):
     # data = np.loadtxt(f"{base_path}/projections-MH-Ising-FPGA-Conservative-Optimistic.csv", delimiter = ",", skiprows=8)
     x = [16,36,64,100,144,196,256,324,400,484]
     x_2 = nspins_ls
-    UF_arr =[1.4949295699999999e-05, 7.1075944e-05,0.00022066767475,0.0005290877813499999,0.0010919345298999999,0.0019848194393499996,0.0034447283587,0.00549388198105,0.00833878898185,0.0122014823203]
-    UF_std_arr = [1.281692194360984e-07,2.400770237115583e-07,6.494463287045599e-07,1.4500511100564922e-06,4.320382517891083e-06,2.814837831438282e-05,1.0121735126975576e-05,2.8951505016686948e-05,2.0626871011086402e-05,3.696280205298863e-05]
-    AMD_CPU_arr = [2.32208e-05,4.30732e-05,7.335889999999999e-05,0.0001188876999999,0.0001779929,0.00026363,0.0004181758999999,0.0005511653,0.0008196583999999,0.0009001752]
-    AMD_CPU_std_arr = [4.675192402457892e-07,1.1130921674925817e-06,1.3209464489944735e-06,1.02022656579583e-06,1.4597906200700317e-06,1.896803053092814e-06,4.331791206238412e-06,1.96672323675702e-06,3.480220520471524e-06,4.301251506113593e-05]
-    P100_arr = [0.0020051717758178,0.0018929004669189,0.0020303964614868,0.0019014120101928,0.0018664121627807,0.001814579963684,0.0018901824951171,0.001854920387268,0.0017940282821655,0.0018584489822387]
-    P100_std_arr = [8.967076731630589e-05,2.5812956107875793e-05,0.0001342126231056,2.707318407289117e-05,2.547394760338819e-05,1.811058837245438e-05,3.723920464327483e-05,1.7795833117330174e-05,1.1623652208707043e-05,2.139123740028496e-05]
 
-    # mag0_ratio_tot = np.loadtxt(f"{calc_path}/accuracy/precision_high/magn_filt_ratio_2_32.csv")
+    # df = pd.read_csv(f"{base_path}/projections-MH-Ising-FPGA-Conservative-Optimistic.csv")
+    UF_arr = [1.4949295699999999e-05,7.1075944e-05,0.00022066767475,0.0005290877813499999,0.0010919345298999999,0.0019848194393499996,0.0034447283587,0.00549388198105,0.00833878898185,0.0122014823203]
+    UF_sem_arr = [1.281692194360984e-07,2.400770237115583e-07,6.494463287045599e-07,1.4500511100564922e-06,4.320382517891083e-06,2.814837831438282e-05,1.0121735126975576e-05,2.8951505016686948e-05,2.0626871011086402e-05,3.696280205298863e-05]
+    c2 = '#4D658B'
+
+    AMD_arr = [6.024429382163056e-05,8.507603140821202e-05,0.00021346740704936235,0.0005386906842602199,0.0010351553123387613,0.0018829416907445874,0.004781920065398177,0.004304961784868221,0.010247831520274859,0.011624627944487226]
+    AMD_sem_arr = [6.664705163286599e-06,9.723958959340587e-06,3.011601469151001e-05,9.938254550254025e-05,6.46945940711511e-05,0.00029142842094319706,0.0007517743788652227,0.0003010697388033933,0.0019289404208148555,0.001732008941557843]
+    c3 = '#6783A2'
+
+    AIMC_arr = [1.0377643116797107e-05,7.900600039765983e-06,1.1639618753790604e-05,1.8124353798102683e-05,2.3262845031206557e-05,2.856946008792e-05,4.5740752304466335e-05,3.124261839319871e-05,5.001025559074907e-05,5.16549575881994e-05]
+    AIMC_sem_arr = [1.1288848071356669e-06,8.796340092548321e-07,1.6286888603759943e-06,3.3401260170205997e-06,1.4412964089971667e-06,4.416998899675706e-06,7.1753600712043175e-06,2.182122810303056e-06,9.41099172758859e-06,7.2898103426467305e-06]
+    c4 = '#80A1B8'
+
+    FPGA_arr = [3.706301113141823e-07,2.821642871344994e-07,4.157006697782358e-07,6.472983499322386e-07,8.308158939716626e-07,1.020337860282857e-06,1.6335982965880832e-06,1.1158077997570969e-06,1.7860805568124667e-06,1.8448199138642642e-06]
+    FPGA_sem_arr = [4.031731454055953e-08,3.1415500330529714e-08,5.816745929914265e-08,1.1929021489359283e-07,5.147487174989881e-08,1.5774996070270378e-07,2.5626285968586845e-07,7.793295751082342e-08,3.361068474138782e-07,2.603503693802404e-07]
+    c5 = '#99BECE'
+
+    Fast_arr = [1.0377643116797106e-07,7.900600039765983e-08,1.1639618753790603e-07,1.812435379810268e-07,2.3262845031206555e-07,2.856946008792e-07,4.5740752304466334e-07,3.1242618393198715e-07,5.001025559074907e-07,5.16549575881994e-07]
+    Fast_sem_arr = [1.1288848071356668e-08,8.796340092548321e-09,1.6286888603759943e-08,3.3401260170205996e-08,1.4412964089971667e-08,4.416998899675706e-08,7.175360071204317e-08,2.1821228103030557e-08,9.41099172758859e-08,7.289810342646731e-08]
+    c6 = '#B0D9E2'
+
 
     mag0_ratio = [5.483398437500000000e-01,3.653564453125000000e-01,2.640380859375000000e-01,2.068481445312500000e-01,1.536254882812500000e-01,1.234130859375000000e-01,1.201782226562500000e-01]
     time_sample_TitanQ = []
@@ -592,18 +613,112 @@ def makePlot_timeProjection(timeout):
         #bij deze hoort x_2
 
     plt.figure()
-    plt.errorbar(x, UF_arr, yerr = UF_std_arr, capsize = 4, label = "UltraFast")
-    plt.errorbar(x, AMD_CPU_arr, yerr=AMD_CPU_std_arr, capsize = 4, label="AMD CPU")
-    plt.errorbar(x, P100_arr, yerr=P100_std_arr, capsize = 4, label="P100")
-    plt.plot(x_2, time_sample_TitanQ, label="TitanQ")
+    plt.errorbar(x, UF_arr, yerr = UF_sem_arr, capsize = 4, color = c2, linestyle = 'dashed',  label = "UltraFast")
+    plt.errorbar(x, AMD_arr, yerr=AMD_sem_arr, capsize = 4, color = c3, label="AMD CPU", )
+    plt.errorbar(x, AIMC_arr, yerr=AIMC_sem_arr, capsize = 4, color = c4, linestyle = 'dashdot', label="AIMC")
+    plt.errorbar(x, FPGA_arr, yerr = FPGA_sem_arr, color=c5, linestyle = 'dashed',label="FPGA")
+    plt.errorbar(x, Fast_arr, yerr=Fast_sem_arr, capsize = 4, color = c6,label="Fast")
+    # plt.plot(x_2, time_sample_TitanQ, color = '#182D66', label="TitanQ")
+
     plt.yscale('log')
     plt.xticks(x)
+    plt.ylim(4e-8,6e-1)
+
     plt.xlabel("spins")
     plt.ylabel("Time per sweep (s)")
-    plt.title("Time per sample for different hardware, " + r"$\alpha$" + f"=2")
-    plt.legend()
+    plt.title("Time per sample for different methods, " + r"$\alpha$" + f"=2")
+
+
+    plt.legend(loc = 'upper left', ncol = 4)
     plt.grid(alpha = 0.5)
+    plt.savefig(f"{calc_path}/varEng/time_projection_without_TQ.png")
+    plt.show()
+# makePlot_timeProjection(2)
+
+def makePlot_sampsTaken_vs_timeout(nspins_ls, alpha, timeout_ls, precision_param, nruns = 32):
+
+
+    def colorFader(c1, c2, mix=0):  # fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+        c1 = np.array(mpl.colors.to_rgb(c1))
+        c2 = np.array(mpl.colors.to_rgb(c2))
+        return mpl.colors.to_hex((1 - mix) * c1 + mix * c2)
+
+    #defining the two colours
+    c1 = '#182D66'
+    c2 = '#BEF9FA'
+
+    figcount = 1
+    plt.figure(figcount)
+    nspins_counter = 1
+    for nspins in tqdm(nspins_ls):
+        samps_taken_mean_arr = []
+        samps_taken_err_arr = []
+        for timeout_ind in timeout_ls:
+            samps_taken_timeout_arr = []
+            for nruns_ind in range(nruns):
+
+                with open(f"{calc_path}/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout_ind}/TQ_states_{nspins}_{alpha}_{timeout_ind}_{nruns_ind+1}.json", 'r') as file:
+                    data = json.load(file)
+                    samps_taken = data['samps_taken']
+                # samps_taken_mean += samps_taken
+                samps_taken_timeout_arr.append(samps_taken)
+            samps_taken_mean_arr.append(np.mean(samps_taken_timeout_arr))
+            samps_taken_err_arr.append(np.std(samps_taken_timeout_arr))
+            # samps_taken_mean_arr.append(samps_taken_mean/nruns)
+
+
+        plt.errorbar(timeout_ls, samps_taken_mean_arr, yerr = samps_taken_err_arr, capsize = 4, color = colorFader(c1, c2, nspins_counter / len(nspins_ls)), label = f"n={nspins}")
+        nspins_counter += 1
+    plt.xlabel("timeout (s)")
+    plt.xticks([0.1,2,4,10,16,24])
+    plt.ylabel("Samples taken")
+    plt.title(r"$\alpha$" + f"={alpha}")
+
+    plt.legend()
+
+    plt.savefig(f"{calc_path}/sampsTaken_vs_timeout_a{alpha}.png")
+    figcount += 1
+
     plt.show()
 
-# UF_arr =[1.4949295699999999e-05, 7.1075944e-05,0.00022066767475,0.0005290877813499999,0.0010919345298999999,0.0019848194393499996,0.0034447283587,0.00549388198105,0.00833878898185,0.0122014823203]
-# print(type(UF_arr[0]))
+# makePlot_sampsTaken_vs_timeout(nspins_ls, 4, timeout_ls, 'high')
+
+def makePlot_spins_vs_timePerSample(nspins_ls, alpha_ls, timeout, precision_param, nruns = 32):
+    c1 = '#182D66'
+    c6 = '#B0D9E2'
+    col = [c1,c6]
+    figcount = 1
+    plt.figure(figcount)
+
+
+    for alpha in alpha_ls:
+        timePerSample_arr = []
+        err = []
+        for nspins in nspins_ls:
+            # timePerSample_sum = 0
+            timePerSample_nspin = []
+            for nruns_ind in range(nruns):
+                with open(f"{calc_path}/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout}/TQ_states_{nspins}_{alpha}_{timeout}_{nruns_ind + 1}.json",'r') as file:
+                    data = json.load(file)
+                    samps_taken = data['samps_taken']
+                # timePerSample_sum += timeout/samps_taken
+                timePerSample_nspin.append(timeout/samps_taken)
+            timePerSample_mean = np.mean(timePerSample_nspin)
+            timePerSample_arr.append(timePerSample_mean)
+            err.append(np.std(timePerSample_nspin))
+        plt.errorbar(nspins_ls, timePerSample_arr, yerr = err, capsize = 4, color = col[alpha_ls.index(alpha)], label = r"$\alpha$"+f"={alpha}")
+
+    plt.xlabel("nspins")
+    plt.xticks(nspins_ls)
+    plt.ylabel("time per sample (s)")
+    plt.title(f"timeout={timeout}s")
+    plt.tight_layout()
+
+    plt.legend(loc = 'upper left')
+
+    plt.savefig(f"{calc_path}/nspins_vs_timePerSample.png")
+    figcount += 1
+
+    plt.show()
+
+# makePlot_spins_vs_timePerSample(nspins_ls, alpha_ls, 2, 'high')

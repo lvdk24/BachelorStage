@@ -15,6 +15,7 @@ from TitanQ import TitanQFunc, load_weights_and_bias, base_path, calc_path, para
 from NQS import stochReconfig, calcLocEng, calcLocEng_new, logWaveFunc, genBonds_2D, getFullVarPar_2D
 
 nspins_ls = [16,36,64,100,196,324,484]
+nspins_ls_extension = [900,2500,4900,7225,10000]
 alpha_ls = [2,4]
 timeout_ls = [0.1, 0.5,2,4,10,16,24]
 precision_ls = ['standard','high']
@@ -65,10 +66,29 @@ def varPar_to_RBM(weightsIsing, biasIsing, nspins, alpha):
 
     return weightsRBM, biasRBM
 
-def getStates(nspins, alpha, timeout, nruns, ising_params_id, useTQ: bool, precision_param):
+def getStates(nspins, alpha, timeout, nruns, ising_params_id:int, useTQ: bool, precision_param):
+    """ Actual sampling / sampled states
+
+    :param nspins:
+    :param alpha:
+    :param timeout:
+    :param nruns:
+    :param ising_params_id: >= 0 with pre-trained weights, -1 for randomized
+    :param useTQ: whether using TQ or get stored weights
+    :param precision_param: high or standard (str)
+    :return:
+    """
 
     # load Ising variational parameters from initial file
-    weightsIsing, biasIsing = load_weights_and_bias(nspins, alpha, ising_params_id)
+    if ising_params_id >= 0:
+        weightsIsing, biasIsing = load_weights_and_bias(nspins, alpha, ising_params_id)
+    elif ising_params_id == -1:
+        weightsRBM = np.random.normal(scale=1e-4, size=(nspins, alpha))
+        biasRBM = np.random.normal(scale=1e-4, size=(alpha))
+
+        # get the full weights and biases and convert them to Ising parameters (for use with TitanQ)
+        weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins,alpha)  # these are RBM parameters
+        weightsIsing, biasIsing = varPar_to_Ising(weightsFull, biasFull)
 
     # send to TitanQ
     if useTQ:
@@ -109,19 +129,19 @@ def getStates(nspins, alpha, timeout, nruns, ising_params_id, useTQ: bool, preci
 
                 #creating JSON library
                 TitanQ_states = {
-                    "nspins": nspins,
-                    "alpha": alpha,
-                    "nruns": nruns_ind + 1,
-                    "timeout": timeout,
-                    "runtime": runtime_in_s, #runtime in seconds
-                    "ising_parameter_id": ising_params_id,
-                    "samps_taken": samps_taken, #van TitanQ,
-                    "num_engines": num_engines,
-                    "num_chains": num_chains,
-                    "coupling_constant": coupling_mult,
-                    "precision": precision,
-                    "full_states": fullState,
-                    "visible_states": TQ_visStates
+                    "nspins": nspins,  # systempar
+                    "alpha": alpha,  # systempar
+                    "nruns": nruns_ind + 1,  # par
+                    "timeout": timeout,  # hyperpar
+                    "runtime": runtime_in_s,  # runtime in seconds
+                    "ising_params_id": ising_params_id, #par
+                    "samps_taken": samps_taken,  # van TitanQ,
+                    "num_engines": num_engines,  # van TQ
+                    "num_chains": num_chains,  # van TQ
+                    "coupling_constant": coupling_mult,  # hyperpar
+                    "precision": precision,  # hyperpar
+                    "full_states": fullState,  # output
+                    "visible_states": TQ_visStates  # outpu
                 }
 
                 states_directory = f"{calc_path}/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout}"
@@ -237,9 +257,6 @@ def getVarEngVal(nspins, alpha, timeout, nruns, ising_params_id, precision_param
     #
     #     return np.array(varEngVal_arr), np.array(locEngVal_arr)
     return np.array(varEngVal_arr), np.array(locEngVal_arr)
-
-# for nspins in nspins_ls:
-#     getVarEngVal(nspins, 4,2,32,0,'high')
 
 def getVarEngVal_split_states(nspins, alpha, timeout, nruns, ising_params_id, precision_param, split_bins=4):
     ''' Uses the filtered states
@@ -486,8 +503,6 @@ def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns_init = 50, timeo
 
     return varEngVal,varEngVal_arr, weightsRBM, biasRBM, epochs
 
-# print(trainingLoop_TQ(100,2,600))
-
 def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
     for timeout_ind in tqdm(timeout_ls):
         for alpha_ind in tqdm(alpha_ls):
@@ -504,18 +519,19 @@ def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
                 # np.savetxt(f"{calc_path}/accuracy/precision_{precision_param}/relErr_vs_timeout/relErr_{nspins_ind}_{alpha_ind}_{nruns}.csv",
                 #            relErr_arr, delimiter=",")
 
-def calcRelErr_QMC(nspins_ls, alpha, epochs):
+def calcRelErr_QMC(nspins, alpha, epochs):
     relErr_arr = []
     varEng_arr = []
     QMC_eng = [-0.701777,-0.678873,-0.673487 ] #16, 36, 64
-    for nspins_ind in range(len(nspins_ls)):
-        with open(f"{storeVal_path}/varEng_evolution_{nspins_ls[nspins_ind]}_{alpha}_{epochs}.json", 'r') as file:
-            data = json.load(file)
-        relErr_arr.append(np.abs(data['varEngVal_arr'][-1] - QMC_eng[nspins_ind]) / (QMC_eng[nspins_ind]) )
-        varEng_arr.append(data['varEngVal_arr'][-1])
+    QMC_index = nspins_ls.index(nspins)
+    # for nspins_ind in range(len(nspins_ls)):
+    with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'r') as file:
+        data = json.load(file)
+    relErr_arr.append(np.abs(data['varEngVal_arr'][-1] - QMC_eng[QMC_index]) / (QMC_eng[QMC_index]) )
+    varEng_arr.append(data['varEngVal_arr'][-1])
 
     return relErr_arr, varEng_arr
 
-
-
-
+for nspins in tqdm(nspins_ls_extension):
+    getStates(nspins, 2, 10, 1, -1, True, 'high')
+# getStates(144, 2, 10, 1, -1, True, 'high')

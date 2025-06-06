@@ -12,7 +12,8 @@ load_dotenv()
 
 #needed to use TitanQ
 TITANQ_DEV_API_KEY = os.getenv("TITANQ_DEV_API_KEY")
-print(get_credits_summary(TITANQ_DEV_API_KEY))
+# print(get_credits_summary(TITANQ_DEV_API_KEY))
+get_credits_summary(TITANQ_DEV_API_KEY)
 
 #fill in your own base_path (in
 base_path = os.getenv("BASE_PATH")
@@ -20,7 +21,6 @@ calc_path = f"{base_path}/calculations"
 param_path = f"{base_path}/ising_params"
 bonds_path = f"{base_path}/bonds"
 storeVal_path = f"{calc_path}/varEng/varEng_training_evolution"
-
 
 def load_weights_and_bias(nspins, alpha,ising_params_id):
     """Loads Ising parameters
