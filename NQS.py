@@ -316,11 +316,6 @@ def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, a
     expVal_locEng = 0
     expVal_locEng_obsk = np.zeros(alpha * (nspins + 1))
 
-    # state, acceptance = thermalisation(N_th, weights, bias)
-
-    # only useful when not using samples from TitanQ
-    # for _ in range(N_s):
-        # state, acc, rej = nextStateMC(state, weights, bias)
 
     for state in states:
 

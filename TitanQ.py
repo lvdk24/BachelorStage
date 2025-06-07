@@ -195,7 +195,9 @@ def magn_filt_split(nspins, alpha, timeout, nruns, precision_param, split_bins):
     return TQ_states_filtered
 
 def magn_filt_ratio(nspins, alpha, timeout, nruns, precision_param):
+    # cannot get errorbars for this (for now) since all filtered states are in one file instead of separate .json files.
     total_vis_states = 0
+
     for nruns_ind in range(nruns):
         # opens one states file
 
@@ -206,6 +208,7 @@ def magn_filt_ratio(nspins, alpha, timeout, nruns, precision_param):
             TQ_states = TQ_states_total['visible_states']
         total_vis_states += len(TQ_states)
         TQ_states_filtered = np.loadtxt(f"{calc_path}/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv", delimiter=",")
+
     total_filt_states = len(TQ_states_filtered)
     magn_filt_ratio = total_filt_states / total_vis_states
     return magn_filt_ratio

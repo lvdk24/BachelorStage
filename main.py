@@ -15,9 +15,11 @@ from TitanQ import TitanQFunc, load_weights_and_bias, base_path, calc_path, para
 from NQS import stochReconfig, calcLocEng, calcLocEng_new, logWaveFunc, genBonds_2D, getFullVarPar_2D
 
 nspins_ls = [16,36,64,100,196,324,484]
-nspins_ls_extension = [2500,4900,7225,10000]
+nspins_ls_extended = [16,36,64,100,196,324,484,900,2500]
+nspins_ls_extension = [900,2500,4900,7225,10000]
 alpha_ls = [2,4]
 timeout_ls = [0.1, 0.5,2,4,10,16,24]
+timeout_per_n = [2,2,2,2,2,2,2,10,120]
 precision_ls = ['standard','high']
 
 def varPar_to_Ising(weightsRBM, biasRBM):
@@ -399,12 +401,12 @@ def calcRelErr_vs_nspins(nspins_ls, alpha, timeout, nruns, precision_param):
 
     return relErr_arr
 
-def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns_init = 50, timeout = 2, precision_param = 'high', lr: float = 5e-3, num_engines = 512):
+def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, epochs_old:int, nruns_init = 30, timeout = 2, precision_param = 'high', lr:float = 5e-3, num_engines = 512, useRandomWeights:bool = True):
     """
 
     :param nspins:
     :param alpha:
-    :param nruns: ~2000 samples: magn_filt_ratio ~ 0.15, 512 states per run, 2000/(0.15 * 512) = 26, needs to be updated apparently
+    :param nruns: ~2000 samples: magn_filt_ratio ~ 0.15, 512 states per run, 2000/(0.15 * 512) = 26 (for n=16), needs to be updated through the epochs
     :param timeout:
     :param precision_param:
     :param epochs: amount of training runs
@@ -417,8 +419,16 @@ def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns_init = 50, timeo
     nruns = nruns_init
 
     # initialise random RBM parameters
-    weightsRBM = np.random.normal(scale=1e-4, size=(nspins, alpha))
-    biasRBM = np.random.normal(scale=1e-4, size=(alpha))
+    if useRandomWeights:
+        weightsRBM = np.random.normal(scale=1e-4, size=(nspins, alpha))
+        biasRBM = np.random.normal(scale=1e-4, size=(alpha))
+
+    # or use old weights
+    else:
+        with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs_old}.json", 'r') as file:
+            data = json.load(file)
+        weightsRBM = data['weightsRBM']
+        biasRBM = data['biasRBM']
 
     # get the full weights and biases and convert them to Ising parameters (for use with TitanQ)
     weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins, alpha) # these are RBM parameters
@@ -431,7 +441,7 @@ def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns_init = 50, timeo
     amount_of_samples_arr = []
     nruns_arr = []
 
-    progbar = tqdm(range(epochs))
+    progbar = tqdm(range(epochs_old + 1, epochs + 1))
     for epoch_ind in progbar:
 
         # for determining time per sample
@@ -489,6 +499,7 @@ def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns_init = 50, timeo
         "nspins": nspins,
         "alpha": alpha,
         "epochs": epochs,
+        "epochs_old": epochs_old,
         "nruns_init": nruns_init,
         "nruns": nruns_arr,
         "timeout": timeout,
@@ -522,7 +533,7 @@ def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
 def calcRelErr_QMC(nspins, alpha, epochs):
     relErr_arr = []
     varEng_arr = []
-    QMC_eng = [-0.701777,-0.678873,-0.673487 ] #16, 36, 64
+    QMC_eng = [-0.701780, -0.678872,-0.673487 ] #16, 36 (exact), 64 (QMC)
     QMC_index = nspins_ls.index(nspins)
     # for nspins_ind in range(len(nspins_ls)):
     with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'r') as file:
@@ -533,5 +544,7 @@ def calcRelErr_QMC(nspins, alpha, epochs):
     return relErr_arr, varEng_arr
 
 # for nspins in tqdm(nspins_ls_extension):
-getStates(2500, 2, 120, 32, -1, True, 'high')
+# getStates(4900, 2, 180, 32, -1, True, 'high')
 # getStates(144, 2, 10, 1, -1, True, 'high')
+
+trainingLoop_TQ(36,2,400,300,useRandomWeights=False)
