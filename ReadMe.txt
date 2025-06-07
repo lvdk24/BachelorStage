@@ -55,7 +55,8 @@ For running code on the cluster: (cn38)
 4a. To sync files from local to cluster: "source sync_to_cn38.sh"
 4b. To sync files from cluster to local: "source sync_38.sh" (both these commands merge, no overwrite)
 5. To run the code on the cluster with properly installed pip modules:
-	5a. In cluster terminal, in the project directory: "source /scratch/envs/activate_micromamba.sh"
+	5a. In cluster terminal, in the project directory: 
+		"source /scratch/envs/activate_micromamba.sh"
 	5b. "micromamba activate"
 	5c. To run the desired code: "python3 your_code.py", in my case: "python3 main.py"
 	

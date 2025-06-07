@@ -427,8 +427,8 @@ def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, epochs_old:int, nruns_
     else:
         with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs_old}.json", 'r') as file:
             data = json.load(file)
-        weightsRBM = data['weightsRBM']
-        biasRBM = data['biasRBM']
+        weightsRBM = np.array(data['weightsRBM'])
+        biasRBM = np.array(data['biasRBM'])
 
     # get the full weights and biases and convert them to Ising parameters (for use with TitanQ)
     weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins, alpha) # these are RBM parameters
@@ -547,4 +547,4 @@ def calcRelErr_QMC(nspins, alpha, epochs):
 # getStates(4900, 2, 180, 32, -1, True, 'high')
 # getStates(144, 2, 10, 1, -1, True, 'high')
 
-trainingLoop_TQ(36,2,400,300,useRandomWeights=False)
+trainingLoop_TQ(36,2,301,300,useRandomWeights=False)
