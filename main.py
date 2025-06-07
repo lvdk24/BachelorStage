@@ -547,4 +547,4 @@ def calcRelErr_QMC(nspins, alpha, epochs):
 # getStates(4900, 2, 180, 32, -1, True, 'high')
 # getStates(144, 2, 10, 1, -1, True, 'high')
 
-trainingLoop_TQ(36,2,301,300,useRandomWeights=False)
+trainingLoop_TQ(36,2,400,300,useRandomWeights=False)
