@@ -150,6 +150,7 @@ def magn_filt(nspins, alpha, timeout, nruns, precision_param, TQ_states = [], us
         for state_index in range(len(TQ_states)):
             if sum(TQ_states[state_index]) == 0:
                 TQ_states_filtered.append(TQ_states[state_index])
+        np.savetxt(f"{calc_path}/filt_states/precision_{precision_param}/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}.csv",TQ_states_filtered, delimiter=",")
         return TQ_states_filtered
 
 def magn_filt_split(nspins, alpha, timeout, nruns, precision_param, split_bins):
@@ -195,7 +196,6 @@ def magn_filt_split(nspins, alpha, timeout, nruns, precision_param, split_bins):
     return TQ_states_filtered
 
 def magn_filt_ratio(nspins, alpha, timeout, nruns, precision_param):
-    # cannot get errorbars for this (for now) since all filtered states are in one file instead of separate .json files.
     total_vis_states = 0
 
     for nruns_ind in range(nruns):
@@ -212,6 +212,9 @@ def magn_filt_ratio(nspins, alpha, timeout, nruns, precision_param):
     total_filt_states = len(TQ_states_filtered)
     magn_filt_ratio = total_filt_states / total_vis_states
     return magn_filt_ratio
+
+# print(magn_filt_ratio(900,2,10,32,'high')) # 0.027099609375
+# print(magn_filt_ratio(2500,2,120,32,'high')) # 0.0179443359375
 
 def magn_filt_ratio_compare(nspins_ls, alpha, timeout_ls, nruns, precision_param):
     """ creates file of mangetic filtering ratios vs nspins for different timeouts

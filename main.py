@@ -143,7 +143,9 @@ def getStates(nspins, alpha, timeout, nruns, ising_params_id:int, useTQ: bool, p
                     "coupling_constant": coupling_mult,  # hyperpar
                     "precision": precision,  # hyperpar
                     "full_states": fullState,  # output
-                    "visible_states": TQ_visStates  # outpu
+                    "visible_states": TQ_visStates,  # output
+                    "engOut": engOut,
+                    "engCalc": engCalc
                 }
 
                 states_directory = f"{calc_path}/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout}"
@@ -340,7 +342,6 @@ def calcRelErr_vs_timeout(nspins, alpha, timeout_ls, nruns, precision_param, spl
                 # average of UF of 1/32 of the 10.000 samples (size = 32x10.000)
                 avg_varEng_UF = sum(varEngVal_UF[0]) / len(varEngVal_UF[0])
 
-
                 # average of variational energy TitanQ
                 avg_varEng_TQ_split = sum(varEngVal_TQ[split_ind]) / len(varEngVal_TQ[split_ind])
 
@@ -356,8 +357,7 @@ def calcRelErr_vs_timeout(nspins, alpha, timeout_ls, nruns, precision_param, spl
     else:
         relErr_arr = []
         for timeout_ind in timeout_ls:
-            _, _, _, varEngVal_UF, varEngVal_TQ = load_engVal(nspins, alpha, timeout_ind, nruns, precision_param,
-                                                              split_states)
+            _, _, _, varEngVal_UF, varEngVal_TQ = load_engVal(nspins, alpha, timeout_ind, nruns, precision_param,split_states)
 
             # average of UF of 1/32 of the 10.000 samples (size = 32x10.000)
             avg_varEng_UF = sum(varEngVal_UF[0]) / len(varEngVal_UF[0])
@@ -401,56 +401,59 @@ def calcRelErr_vs_nspins(nspins_ls, alpha, timeout, nruns, precision_param):
 
     return relErr_arr
 
-def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, epochs_old:int, nruns_init = 30, timeout = 2, precision_param = 'high', lr:float = 5e-3, num_engines = 512, useRandomWeights:bool = True):
+def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, epochs_old:int, nruns_init = 29 , timeout = 2, precision_param = 'high', lr:float = 5e-3, num_engines = 512, useRandomWeights:bool = True, desiredSamples = 2000):
     """
 
-    :param nspins:
-    :param alpha:
+    :param nspins: system size
+    :param alpha: hidden layer density
     :param nruns: ~2000 samples: magn_filt_ratio ~ 0.15, 512 states per run, 2000/(0.15 * 512) = 26 (for n=16), needs to be updated through the epochs
-    :param timeout:
-    :param precision_param:
-    :param epochs: amount of training runs
-    :param lr:
-    :return: variational energy array of all states
+    :param timeout: thermalization parameter (TitanQ)
+    :param precision_param: precision parameter (TitanQ)
+    :param epochs: amount of training runs/iterations
+    :param lr: constant step size
+    :return: variational energy array of all states + saves json file with all parameters
     """
 
-    start_time = time.time()
 
-    nruns = nruns_init
 
     # initialise random RBM parameters
     if useRandomWeights:
         weightsRBM = np.random.normal(scale=1e-4, size=(nspins, alpha))
         biasRBM = np.random.normal(scale=1e-4, size=(alpha))
+        varEngVal_arr = []
+        amount_of_samples_arr = []
+        nruns_arr = []
+        nruns = nruns_init
 
-    # or use old weights
+    # or use pre-trained weights
     else:
         with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs_old}.json", 'r') as file:
             data = json.load(file)
         weightsRBM = np.array(data['weightsRBM'])
         biasRBM = np.array(data['biasRBM'])
+        varEngVal_arr = data['varEngVal_arr']
+        amount_of_samples_arr = data['amount_of_filt_samples']
+        nruns_arr = data['nruns']
+        nruns = nruns_arr[-1]
 
     # get the full weights and biases and convert them to Ising parameters (for use with TitanQ)
     weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins, alpha) # these are RBM parameters
     weightsIsing, biasIsing = varPar_to_Ising(weightsFull, biasFull)
 
+    # generate bonds
     bonds = np.array(genBonds_2D(nspins))
 
     # keeping track of some values
-    varEngVal_arr = []
-    amount_of_samples_arr = []
-    nruns_arr = []
+
 
     progbar = tqdm(range(epochs_old + 1, epochs + 1))
     for epoch_ind in progbar:
 
-        # for determining time per sample
-        epoch_start = time.time()
-
         nruns_arr.append(nruns)
 
         filt_states = []
-        for _ in range(nruns):
+        for _ in tqdm(range(nruns)):
+
             # get array of visible states from TitanQ
             _, TQ_visStates_oneRow, _, _, _, _, _, _, _ = TitanQFunc(nspins, alpha, weightsIsing, biasIsing, timeout, precision_param)
 
@@ -480,38 +483,54 @@ def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, epochs_old:int, nruns_
         weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins, alpha)
         weightsIsing, biasIsing = varPar_to_Ising(weightsFull, biasFull)
 
+        # storing the variational energy every iteration
         np.savetxt(f"{storeVal_path}/varEngVal_arr/varEng_evolution_{nspins}_{alpha}_{epochs}.csv", varEngVal_arr, delimiter = ",")
 
         mag_0_ratio = amount_of_filt_samples / ( nruns * num_engines )
-        new_nruns = int(2000/(num_engines * mag_0_ratio))
+        new_nruns = int(desiredSamples/(num_engines * mag_0_ratio))
         nruns = new_nruns
         progbar.set_description(f"varEng = {varEngVal}")
 
-    # calculating total runtime
-    end_time = time.time()
-    runtime = end_time - start_time
+        # load the json data to modify it (only after the first epoch_ind)
+        if epoch_ind > 1:
+            with open(f"{calc_path}/modify_json_test.json", 'r') as file:
+                data = json.load(file)
 
-    # save evolution of variational energy over the epochs to .json file
-    varEng_Evolution = {
-        "varEngVal_arr":  varEngVal_arr,
-        "runtime": runtime,
-        "amount_of_filt_samples": amount_of_samples_arr,
-        "nspins": nspins,
-        "alpha": alpha,
-        "epochs": epochs,
-        "epochs_old": epochs_old,
-        "nruns_init": nruns_init,
-        "nruns": nruns_arr,
-        "timeout": timeout,
-        "precision_param": precision_param,
-        "learning_rate": lr,
-        "weightsRBM": weightsRBM.tolist(),
-        "biasRBM": biasRBM.tolist()
-    }
+            # modifying the data
+            data['varEngVal_arr'] = varEngVal_arr
+            data['amount_of_filt_samples'] = amount_of_samples_arr
+            data['epoch_ind'] = epoch_ind
+            data['nruns'] = nruns_arr
+            data['weightsRBM'] = weightsRBM.tolist()
+            data['biasRBM'] = biasRBM.tolist()
+
+        # save evolution of variational energy over the epochs to .json file (modified every epoch to save progress)
+        varEng_Evolution = {
+            "nspins": nspins,
+            "alpha": alpha,
+            "timeout": timeout,
+            "precision_param": precision_param,
+            "learning_rate": lr,
+            "epochs": epochs,
+            "epoch_ind": epoch_ind,
+            "epochs_old": epochs_old,
+            "nruns_init": nruns_init,
+            "nruns": nruns_arr,
+            "varEngVal_arr": varEngVal_arr,
+            "amount_of_filt_samples": amount_of_samples_arr,
+            "weightsRBM": weightsRBM.tolist(),
+            "biasRBM": biasRBM.tolist()
+        }
+
+        with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epoch_ind}.json", 'w') as file:
+            json.dump(varEng_Evolution, file)
+
+        # separate if-statement to be sure the current json file is saved and THEN the previous file is deleted
+        if epoch_ind > 1:
+            os.remove(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epoch_ind-1}.json")
 
     with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'w') as file:
         json.dump(varEng_Evolution, file)
-
     return varEngVal,varEngVal_arr, weightsRBM, biasRBM, epochs
 
 def doCalcs(nspins_ls, alpha_ls, timeout_ls, nruns, precision_param):
@@ -547,4 +566,8 @@ def calcRelErr_QMC(nspins, alpha, epochs):
 # getStates(4900, 2, 180, 32, -1, True, 'high')
 # getStates(144, 2, 10, 1, -1, True, 'high')
 
-trainingLoop_TQ(36,2,400,300,useRandomWeights=False)
+# trainingLoop_TQ(36,2,400,300,useRandomWeights=False)
+# print(np.abs(-0.6744327725652925 - -0.678872)/-0.678872)
+
+print(trainingLoop_TQ(36, 2, 400, 300, useRandomWeights = False))
+# print(trainingLoop_TQ(36, 2, 3, 1, useRandomWeights = False))

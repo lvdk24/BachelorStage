@@ -254,7 +254,7 @@ def calcLocEng(state, alpha, bonds, weights, bias):
 
 @njit
 def calcLocEng_new(state, alpha, bonds, weightsRBM, biasRBM):
-    """ Faster way (w.r.t. calcLocEng) of calculating the local energy (and therefore the variational energy) with use of a lookup table.
+    """ Faster way (w.r.t. calcLocEng) of calculating the local energy (and therefore the variational energy) with use of a lookup table. (dissertation Giammarco)
     :param state:
     :param alpha:
     :param bonds:
@@ -266,7 +266,7 @@ def calcLocEng_new(state, alpha, bonds, weightsRBM, biasRBM):
     locEng = 0
     nspins = len(state)
     RBMEng, weightedSum, _ = logWaveFunc(state, weightsRBM, biasRBM)
-    weights_transposed = weightsRBM.transpose() #dit werkt nog niet, maar zoiets zou het moeten zijn
+    weights_transposed = weightsRBM.transpose()
 
     for bond in bonds:
         locEng = locEng + (state[bond[0]] * state[bond[1]])
@@ -297,7 +297,7 @@ def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, a
     :param alpha: hidden layer density
     :param sampleSize: amount of samples, equal to len(TQ_states_filtered) in main.py
     :param N_s: amount of samples, needs to be calculated if used in training
-    :param N_th: thermalisation, not used when TitanQ is used for smapling
+    :param N_th: thermalisation, not used when TitanQ is used for sampling
     :param reg: regularization erm for the inversion of the S_kk matrix, default 1e-4.
     :return: tuple[np.ndarray, np.ndarray, float]: returns the gradients for the independent weights, gradients for the independent biases, and the Energy per spin
 
