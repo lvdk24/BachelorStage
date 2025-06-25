@@ -569,7 +569,7 @@ def calcRelErr_QMC(nspins, alpha, epochs):
 # trainingLoop_TQ(36,2,400,300,useRandomWeights=False)
 # print(np.abs(-0.6744327725652925 - -0.678872)/-0.678872)
 
-print(trainingLoop_TQ(36, 2, 500, 450, useRandomWeights = False))
+# print(trainingLoop_TQ(36, 2, 500, 450, useRandomWeights = False))
 # print(trainingLoop_TQ(36, 2, 3, 1, useRandomWeights = False))
 
 # print(calcRelErr_QMC(36,2,400)) #[-0.0076922984472129535] relerr
