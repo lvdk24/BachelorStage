@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib as mpl
+import matplotlib
 import h5py
 import glob
 from tqdm import tqdm
@@ -136,6 +136,9 @@ def make_RBMEng_diff_prec_plot(nspins, alpha, timeout, nruns, precision_ls):
     plt.show()
 
 def make_varEng_diff_plot(nspins, alpha, timeout, nruns, precision_param):
+    c1 = '#182D66'
+    c2 = '#BEF9FA'
+
     figcount = 1
     # getting histogram values from TitanQ
     _, _, _, varEngVal_UF, varEngVal_TQ = load_engVal(nspins, alpha, timeout, nruns, precision_param)
@@ -150,15 +153,15 @@ def make_varEng_diff_plot(nspins, alpha, timeout, nruns, precision_param):
     # starting figure
     plt.figure(figcount)
     # plt.bar(bins_var_TQ[:-1], hist_RBMEng_TQ, width=np.diff(bins_var_TQ), alpha=0.3, color = 'cyan', edgecolor="black",label="RBMEngTQ")
-    plt.step((bins_varEng_TQ[:-1] + bins_varEng_TQ[1:]) / 2, hist_varEng_TQ, color='blue', label="TQ")
-    plt.bar(bins_varEng_TQ[:-1], hist_varEng_UF, width=np.diff(bins_varEng_TQ), alpha=0.6, color='yellow',
-            edgecolor="black", label="UF")
+    plt.step((bins_varEng_TQ[:-1] + bins_varEng_TQ[1:]) / 2, hist_varEng_TQ, color=c1, label="TitanQ")
+    plt.bar(bins_varEng_TQ[:-1], hist_varEng_UF, width=np.diff(bins_varEng_TQ), alpha=0.5, color=c2,
+            edgecolor="grey", label="ULTRAFAST")
 
     # aesthetics
-    myTitle = f"Difference in variational Energy TQ vs UF, n={nspins}, " + r"$\alpha$" +f"={alpha}, " + r"$\tau$" + f"={timeout}s, nruns={nruns}, precision={precision_param}"
-    plt.xlabel("Variational Energy")
+    myTitle = f"n={nspins}, " + r"$\alpha$" +f"={alpha}, " + r"$\tau$" + f"={timeout}s, runs={nruns}, precision={precision_param}"
+    plt.xlabel("Variational Energy (per spin)")
     plt.ylabel("Probability")
-    plt.legend(loc="upper right")
+    plt.legend(loc="upper left")
     plt.title(myTitle, loc='center', wrap=True)
     plt.savefig(f"{calc_path}/varEng/precision_{precision_param}/varEngPlots/varEngPlot_comp_{nspins}_{alpha}_{timeout}_{nruns}.png")
     figcount += 1
@@ -670,7 +673,7 @@ def makePlot_timeProjection(alpha = 2, timeout = 2, precision_param = 'high', nr
     plt.savefig(f"{calc_path}/varEng/time_projection_with_errorbars.png")
     plt.show()
 
-makePlot_timeProjection(alpha = 2, timeout = 2, precision_param = 'high', nruns = 32, split_bins = 4)
+# makePlot_timeProjection(alpha = 2, timeout = 2, precision_param = 'high', nruns = 32, split_bins = 4)
 
 def makePlot_sampsTaken_vs_timeout(nspins_ls, alpha, timeout_ls, precision_param, nruns = 32):
 
@@ -721,10 +724,12 @@ def makePlot_sampsTaken_vs_timeout(nspins_ls, alpha, timeout_ls, precision_param
 def makePlot_spins_vs_timePerSample(alpha_ls, precision_param, nruns = 32):
     c1 = '#182D66'
     c6 = '#B0D9E2'
-    col = [c1,c6]
+    col = [c6,c1]
     figcount = 1
-    plt.figure(figcount)
+    # plt.figure(figcount)
+    fig, ax = plt.subplots()
     nspins_ls_ls = [nspins_ls_extended, nspins_ls]
+    # nspins_ls_ls = [nspins_ls, nspins_ls]
 
     for alpha in alpha_ls:
         timePerSample_arr = []
@@ -744,12 +749,15 @@ def makePlot_spins_vs_timePerSample(alpha_ls, precision_param, nruns = 32):
         plt.errorbar(nspins_ls_ls[alpha_ls.index(alpha)], timePerSample_arr, yerr = err, capsize = 4, color = col[alpha_ls.index(alpha)], label = r"$\alpha$"+f"={alpha}")
 
     plt.xlabel("nspins")
-    # plt.xticks(nspins_ls_extended)
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.ylim(1e-3,3e-2)
+    # plt.xticks(nspins_ls)
+    ax.set_xticks([16,36,64,100,196,324,484,900,2500])
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    # plt.xscale('log')
+    # plt.yscale('log')
+    # plt.ylim(1e-3,2e-2)
     plt.ylabel("time per sample (s)")
-    # plt.title(f"timeout={timeout}s")
+    plt.title("Time per sample vs system size")
     plt.tight_layout()
 
     plt.legend(loc = 'upper left')
@@ -759,4 +767,7 @@ def makePlot_spins_vs_timePerSample(alpha_ls, precision_param, nruns = 32):
 
     plt.show()
 
+makePlot_spins_vs_timePerSample([2,4],'high')
 # makePlot_training_varEngVal(36, 2, 400)
+
+# makePlot_training_varEngVal(36,2,450)

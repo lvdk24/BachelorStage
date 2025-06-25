@@ -61,3 +61,5 @@ For running code on the cluster: (cn38)
 	5c. To run the desired code: "python3 your_code.py", in my case: "python3 main.py"
 	
 
+To get out of tmux: ^b d
+to get back into tmux: tmux a
