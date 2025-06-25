@@ -758,3 +758,5 @@ def makePlot_spins_vs_timePerSample(alpha_ls, precision_param, nruns = 32):
     figcount += 1
 
     plt.show()
+
+# makePlot_training_varEngVal(36, 2, 400)

@@ -401,7 +401,7 @@ def calcRelErr_vs_nspins(nspins_ls, alpha, timeout, nruns, precision_param):
 
     return relErr_arr
 
-def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, epochs_old:int, nruns_init = 29 , timeout = 2, precision_param = 'high', lr:float = 5e-3, num_engines = 512, useRandomWeights:bool = True, desiredSamples = 2000):
+def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, epochs_old:int, nruns_init = 50 , timeout = 2, precision_param = 'high', lr:float = 5e-3, num_engines = 512, useRandomWeights:bool = True, desiredSamples = 2000):
     """
 
     :param nspins: system size
@@ -569,5 +569,5 @@ def calcRelErr_QMC(nspins, alpha, epochs):
 # trainingLoop_TQ(36,2,400,300,useRandomWeights=False)
 # print(np.abs(-0.6744327725652925 - -0.678872)/-0.678872)
 
-print(trainingLoop_TQ(36, 2, 400, 300, useRandomWeights = False))
+print(trainingLoop_TQ(36, 2, 450, 400, useRandomWeights = False))
 # print(trainingLoop_TQ(36, 2, 3, 1, useRandomWeights = False))
