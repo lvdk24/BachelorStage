@@ -10,54 +10,6 @@ import pandas as pd
 from TitanQ import base_path, calc_path, param_path, bonds_path, magn_filt_ratio
 from main import getVarEngVal, nspins_ls,nspins_ls_extended, alpha_ls, timeout_ls,timeout_per_n, precision_ls, load_engVal, calcRelErr_vs_timeout, trainingLoop_TQ, storeVal_path
 
-def standardize(distribution):
-    newDistribution = (distribution-np.mean(distribution))/np.std(distribution)
-    return newDistribution
-
-# def plotEngDist(nspins, alpha, bins, figCounter):
-#     varEngValues = np.loadtxt(f"{base_path}/calculations/varEng/varEngValues/varEngValues_{nspins}_{alpha}.csv",delimiter=",")
-#     hist, bins_hist = np.histogram()
-#     plt.figure(figCounter)
-#     plt.hist(varEngValues, bins = 20)
-#     plt.xlabel("Variational Energy")
-#     plt.ylabel("Amount")
-#     plt.title(f"varEng distribution from initial TitanQ states, n={nspins}, alpha={alpha}")
-#     plt.show()
-#     plt.savefig(f"{base_path}/calculations/varEng/varEngPlots/varEngPlot_dist_{nspins}_{alpha}")
-#
-# def plotEngDist_diff(nspins, alpha, figCounter):
-#
-#     # setting paths
-#     distributions_path = f"{base_path}/varParTitanQ/distributions"
-#
-#     # Load the distributions
-#     distribution_path = f"{distributions_path}/{nspins}_{alpha}_Eloc.h5"
-#
-#     varEngValues = np.loadtxt(f"{base_path}/calculations/varEng/varEngValues/varEngValues_{nspins}_{alpha}.csv",delimiter=",")
-#
-#     with h5py.File(distribution_path, "r") as f:
-#                 print("Keys: %s" % f.keys())
-#
-#                 Eloc = f['Eloc'][()]  # returns as a numpy array
-#                 UltraFast_Values = f['RBMEnergy'][()]
-#
-#     # figure counter
-#     plt.figure(figCounter)
-#
-#     # plotting histograms with standardization to compare
-#     plt.hist(standardize(UltraFast_Values), alpha = 0.5, label = " UF")
-#     plt.hist(standardize(varEngValues), alpha = 0.5, label = "TitanQ")
-#
-#     # aesthetics
-#     plt.legend()
-#     plt.xlabel("Variational Energy")
-#     plt.ylabel("Amount")
-#     plt.title(f"Distribution of varEng from TitanQ vs. UltraFast, n={nspins}, alpha={alpha}")
-#
-#     # saving & showing
-#     plt.show()
-#     plt.savefig(f"{base_path}/calculations/varEng/varEngComparison/varEngPlot_comp_{nspins}_{alpha}")
-
 def make_RBMEng_diff_plot(nspins, alpha, timeout, nruns, precision_param):
     figcount = 1
     # getting histogram values from TitanQ
@@ -84,7 +36,7 @@ def make_RBMEng_diff_plot(nspins, alpha, timeout, nruns, precision_param):
     plt.title(myTitle, loc='center', wrap=True)
     plt.legend(loc="upper right")
 
-    plt.savefig(f"{calc_path}/RBMEng/precision_{precision_param}/RBMEngPlots/RBMEngPlot_comp_{nspins}_{alpha}_{timeout}_{nruns}.png")
+    plt.savefig(f"{calc_path}/RBMEng/precision_{precision_param}/RBMEngPlots/RBMEngPlot_comp_n{nspins}_a{alpha}_t{timeout}_r{nruns}.png")
     figcount += 1
     plt.show()
 
@@ -131,7 +83,7 @@ def make_RBMEng_diff_prec_plot(nspins, alpha, timeout, nruns, precision_ls):
     plt.title(myTitle, loc='center', wrap=True)
     plt.legend(loc="upper right")
 
-    plt.savefig(f"{calc_path}/RBMEng/RBMEngPlots_comp_prec/RBMEngPlot_comp_prec_{nspins}_{alpha}_{timeout}_{nruns}.png")
+    plt.savefig(f"{calc_path}/RBMEng/RBMEngPlots_comp_prec/RBMEngPlot_comp_prec_n{nspins}_a{alpha}_t{timeout}_r{nruns}.png")
     figcount += 1
     plt.show()
 
@@ -163,7 +115,7 @@ def make_varEng_diff_plot(nspins, alpha, timeout, nruns, precision_param):
     plt.ylabel("Probability")
     plt.legend(loc="upper left")
     plt.title(myTitle, loc='center', wrap=True)
-    plt.savefig(f"{calc_path}/varEng/precision_{precision_param}/varEngPlots/varEngPlot_comp_{nspins}_{alpha}_{timeout}_{nruns}.png")
+    plt.savefig(f"{calc_path}/varEng/precision_{precision_param}/varEngPlots/varEngPlot_comp_n{nspins}_a{alpha}_t{timeout}_r{nruns}.png")
     figcount += 1
     plt.show()
 
@@ -175,7 +127,7 @@ def makePlot_varEng_differentCalculation(nspins, alpha, timeout, nruns, precisio
     hist_varEng_TQ, bins_varEng_TQ = np.histogram(varEngVal_TQ, bins=60, density=True)
     hist_varEng_TQ = hist_varEng_TQ / np.sum(hist_varEng_TQ)
 
-    varEng_new = np.loadtxt(f"{calc_path}/varEng/test_varEng_calc/varEng_{nspins}_{alpha}_{timeout}_{nruns}.csv", delimiter=",")
+    varEng_new = np.loadtxt(f"{calc_path}/varEng/test_varEng_calc/varEng_n{nspins}_a{alpha}_t{timeout}_r{nruns}.csv", delimiter=",")
 
     hist_varEng_new, bins_new = np.histogram(varEng_new, bins=60, density=True)
     hist_varEng_new = hist_varEng_new / np.sum(hist_varEng_new)
@@ -193,7 +145,7 @@ def makePlot_varEng_differentCalculation(nspins, alpha, timeout, nruns, precisio
     plt.ylabel("Probability")
     plt.legend(loc="upper right")
     plt.title(myTitle, loc='center', wrap=True)
-    plt.savefig(f"{calc_path}/varEng/precision_{precision_param}/varEngPlots/varEngPlot_comp_{nspins}_{alpha}_{timeout}_{nruns}.png")
+    plt.savefig(f"{calc_path}/varEng/precision_{precision_param}/varEngPlots/varEngPlot_comp_n{nspins}_a{alpha}_t{timeout}_r{nruns}.png")
     figcount += 1
     plt.show()
 
@@ -232,7 +184,7 @@ def make_varEng_diff_prec_plot(nspins, alpha, timeout, nruns, precision_ls):
     plt.ylabel("Probability")
     plt.legend(loc="upper right")
     plt.title(myTitle, loc='center', wrap=True)
-    plt.savefig(f"{calc_path}/varEng/varEngPlots_comp_prec/varEngPlots_comp_prec_{nspins}_{alpha}_{timeout}_{nruns}.png")
+    plt.savefig(f"{calc_path}/varEng/varEngPlots_comp_prec/varEngPlots_comp_prec_n{nspins}_a{alpha}_t{timeout}_r{nruns}.png")
     figcount += 1
     plt.show()
 
@@ -242,7 +194,7 @@ def make_relErr_vs_nspins_plot(nspins_ls,alpha_ls):
     col_ind=0
     col=['orange', 'magenta']
     for alpha in alpha_ls:
-        relErr_arr = np.loadtxt(f"{base_path}/calculations/accuracy/relErr_vs_nspins/relErr_{alpha}_10_8.csv", delimiter = ",")
+        relErr_arr = np.loadtxt(f"{base_path}/calculations/accuracy/relErr_vs_nspins/relErr_a{alpha}_10_8.csv", delimiter = ",")
         plt.plot(nspins_ls, relErr_arr, color = col[col_ind], label=r"$\alpha$" + f"={alpha}")
         col_ind += 1
 
@@ -329,7 +281,7 @@ def makePlot_relErr_vs_timeout_split_states(nspins_ls, alpha, timeout_ls,nruns, 
     plt.legend()
 
     # saving and showing the figure
-    plt.savefig(f"{calc_path}/accuracy/precision_high/relErr_vs_timeout_split_{alpha}_{nruns}_lower_timeout_values.png", bbox_inches='tight')
+    plt.savefig(f"{calc_path}/accuracy/precision_high/relErr_vs_timeout_split_a{alpha}_r{nruns}_lower_timeout_values.png", bbox_inches='tight')
     figcount += 1
     plt.show()
 
@@ -357,7 +309,7 @@ def makePlot_magn_filt_ratio(nspins_ls, alpha, timeout_ls, nruns, precision_para
             ratio_perTimeout_perBin_arr = []
             for split_ind in range(split_bins):
 
-                data_filt = np.loadtxt(f"{calc_path}/filt_states/precision_{precision_param}/split_states/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}_{split_ind+1}of{split_bins}.csv", delimiter = ",")
+                data_filt = np.loadtxt(f"{calc_path}/filt_states/precision_{precision_param}/split_states/vis_states_filt_n{nspins}_a{alpha}_t{timeout}_r{nruns}_{split_ind+1}of{split_bins}.csv", delimiter = ",")
 
                 ratio_perTimeout_perBin_arr.append(len(data_filt) / ((nruns/split_bins) * 512))
             ratio_mean_arr.append(np.mean(ratio_perTimeout_perBin_arr))
@@ -374,7 +326,7 @@ def makePlot_magn_filt_ratio(nspins_ls, alpha, timeout_ls, nruns, precision_para
     plt.ylabel("Magnetic filter ratio")
     plt.legend()
     plt.title(r"$\alpha$" + f"={alpha}")
-    plt.savefig(f"{calc_path}/accuracy/precision_high/magn_filt_ratio_{alpha}_{nruns}_errorbars.png", bbox_inches='tight')
+    plt.savefig(f"{calc_path}/accuracy/precision_high/magn_filt_ratio_a{alpha}_r{nruns}_errorbars.png", bbox_inches='tight')
     figcount += 1
     plt.show()
 
@@ -417,7 +369,7 @@ def makePlot_magn_filt_ratio(nspins_ls, alpha, timeout_ls, nruns, precision_para
 
 def makePlot_training_varEngVal(nspins, alpha, epochs):
 
-    with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'r') as file:
+    with open(f"{storeVal_path}/varEng_evolution_n{nspins}_a{alpha}_{epochs}.json", 'r') as file:
         varEngVal_evolution = json.load(file)
         varEngVal_arr = varEngVal_evolution['varEngVal_arr']
         # filt_samp_arr = varEngVal_evolution['varEngVal_evolution']
@@ -444,7 +396,7 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
 
     # plt.legend(loc="upper right")
     plt.title(myTitle, loc='center', wrap=True)
-    plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEngVal_Evo_{nspins}_{alpha}_{epochs}.png")
+    plt.savefig(f"{calc_path}/varEng/varEng_training_evolution/plots/varEngVal_Evo_n{nspins}_a{alpha}_{epochs}.png")
 
     plt.show()
 
@@ -452,7 +404,7 @@ def makePlot_training_varEngVal(nspins, alpha, epochs):
 
 def makePlot_training_varEngVal_copy(nspins, alpha, epochs):
 
-    with open(f"{storeVal_path}/varEng_evolution_{nspins}_{alpha}_{epochs}.json", 'r') as file:
+    with open(f"{storeVal_path}/varEng_evolution_n{nspins}_a{alpha}_{epochs}.json", 'r') as file:
         varEngVal_evolution = json.load(file)
         varEngVal_arr = varEngVal_evolution['varEngVal_arr']
         filt_samp_arr = varEngVal_evolution['amount_of_filt_samples']
@@ -527,12 +479,12 @@ def makePlot_locEng_speedup(timeout, nruns, precision_param):
         time_per_nspin_new = np.zeros((4))
         time_per_nspin = np.zeros((4))
         for run_ind in range(4):
-            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_new_{nspins_ls[i]}_2_{timeout}_{nruns}_{run_ind+2}of5.json", 'r') as file:
+            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_new_{nspins_ls[i]}_2_t{timeout}_r{nruns}_{run_ind+2}of5.json", 'r') as file:
                 data_new = json.load(file)
 
             time_per_nspin_new[run_ind] = (data_new['runtime'] / num_filt_samples_arr[i])
 
-            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins_ls[i]}_2_{timeout}_{nruns}_{run_ind+2}of5.json", 'r') as file:
+            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins_ls[i]}_2_t{timeout}_r{nruns}_{run_ind+2}of5.json", 'r') as file:
                 data = json.load(file)
             time_per_nspin[run_ind]=(data['runtime'] / num_filt_samples_arr[i])
 
@@ -546,12 +498,12 @@ def makePlot_locEng_speedup(timeout, nruns, precision_param):
         time_per_nspin_4 = np.zeros((4))
 
         for run_ind in range(4):
-            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_new_{nspins_ls[i]}_4_{timeout}_{nruns}_{run_ind+1}of4.json", 'r') as file:
+            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_new_{nspins_ls[i]}_4_t{timeout}_r{nruns}_{run_ind+1}of4.json", 'r') as file:
                 data_new = json.load(file)
 
             time_per_nspin_new_4[run_ind] = (data_new['runtime'] / num_filt_samples_arr_4[i])
 
-            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins_ls[i]}_4_{timeout}_{nruns}_{run_ind+1}of4.json", 'r') as file:
+            with open(f"{calc_path}/varEng/precision_{precision_param}/varEng_{nspins_ls[i]}_4_t{timeout}_r{nruns}_{run_ind+1}of4.json", 'r') as file:
                 data = json.load(file)
             time_per_nspin_4[run_ind]=(data['runtime'] / num_filt_samples_arr_4[i])
 
@@ -638,7 +590,7 @@ def makePlot_timeProjection(alpha = 2, timeout = 2, precision_param = 'high', nr
         ratio_perSpin_perBin_arr = []
         for split_ind in range(split_bins):
 
-            data_filt = np.loadtxt(f"{calc_path}/filt_states/precision_{precision_param}/split_states/vis_states_filt_{nspins}_{alpha}_{timeout}_{nruns}_{split_ind+1}of{split_bins}.csv", delimiter = ",")
+            data_filt = np.loadtxt(f"{calc_path}/filt_states/precision_{precision_param}/split_states/vis_states_filt_n{nspins}_a{alpha}_t{timeout}_r{nruns}_{split_ind+1}of{split_bins}.csv", delimiter = ",")
 
             ratio_perSpin_perBin_arr.append(len(data_filt) / ((nruns/split_bins) * 512))
 
@@ -675,6 +627,7 @@ def makePlot_timeProjection(alpha = 2, timeout = 2, precision_param = 'high', nr
 
 # makePlot_timeProjection(alpha = 2, timeout = 2, precision_param = 'high', nruns = 32, split_bins = 4)
 
+
 def makePlot_sampsTaken_vs_timeout(nspins_ls, alpha, timeout_ls, precision_param, nruns = 32):
 
 
@@ -697,7 +650,7 @@ def makePlot_sampsTaken_vs_timeout(nspins_ls, alpha, timeout_ls, precision_param
             samps_taken_timeout_arr = []
             for nruns_ind in range(nruns):
 
-                with open(f"{calc_path}/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout_ind}/TQ_states_{nspins}_{alpha}_{timeout_ind}_{nruns_ind+1}.json", 'r') as file:
+                with open(f"{calc_path}/states/precision_{precision_param}/all_states_n{nspins}_a{alpha}_{timeout_ind}/TQ_states_n{nspins}_a{alpha}_{timeout_ind}_{nruns_ind+1}.json", 'r') as file:
                     data = json.load(file)
                     samps_taken = data['samps_taken']
                 # samps_taken_mean += samps_taken
@@ -738,7 +691,7 @@ def makePlot_spins_vs_timePerSample(alpha_ls, precision_param, nruns = 32):
             # timePerSample_sum = 0
             timePerSample_nspin = []
             for nruns_ind in range(nruns):
-                with open(f"{calc_path}/states/precision_{precision_param}/all_states_{nspins}_{alpha}_{timeout_per_n[nspins_ls_ls[alpha_ls.index(alpha)].index(nspins)]}/TQ_states_{nspins}_{alpha}_{timeout_per_n[nspins_ls_ls[alpha_ls.index(alpha)].index(nspins)]}_{nruns_ind + 1}.json",'r') as file:
+                with open(f"{calc_path}/states/precision_{precision_param}/all_states_n{nspins}_a{alpha}_{timeout_per_n[nspins_ls_ls[alpha_ls.index(alpha)].index(nspins)]}/TQ_states_n{nspins}_a{alpha}_{timeout_per_n[nspins_ls_ls[alpha_ls.index(alpha)].index(nspins)]}_{nruns_ind + 1}.json",'r') as file:
                     data = json.load(file)
                     samps_taken = data['samps_taken']
                 # timePerSample_sum += timeout/samps_taken
