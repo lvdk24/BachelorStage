@@ -1,4 +1,5 @@
 To get started: run the getStarted.py file. This will create all the necessary directories used in the code.
+Also in the .env file the API key should be put and the "base_path" should be the directory where you will be putting all your files and code.
 
 If you want to get results right away, use the Ising_params/ising_parameters/ising_params_id_0 directory for pre-trained weights.
 
