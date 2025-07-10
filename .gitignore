@@ -2,14 +2,15 @@
 .idea/**
 __pycache__
 .env
-ising_params
 varParTitanQ
 calculations
-bonds
+
 test_missing_files
 test_varEng_calc
 plots
-
+bridging.py
+plotting.py
+plotting_old.py
 
 
 

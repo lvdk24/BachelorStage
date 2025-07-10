@@ -1,5 +1,7 @@
 To get started: run the getStarted.py file. This will create all the necessary directories used in the code.
 
+If you want to get results right away, use the Ising_params/ising_parameters/ising_params_id_0 directory for pre-trained weights.
+
 Naming: Since we have used quite a lot of parameters and want to distinguish between those in the filename for easy reading, we use the following naming system:
 n - nspins, a - alpha, t - timeout, r - nruns (or ri for nruns index). For example:
 TQ_states_n16_a2_t0.1_ri1.json.
