@@ -1,14 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
+import matplotlib as mpl
 import h5py
 import glob
 from tqdm import tqdm
 import json
 import pandas as pd
 
-from TitanQ import base_path, calc_path, param_path, bonds_path, magn_filt_ratio
+from TitanQ import magn_filt_ratio
 from main import getVarEngVal, nspins_ls,nspins_ls_extended, alpha_ls, timeout_ls,timeout_per_n, precision_ls, load_engVal, calcRelErr_vs_timeout, trainingLoop_TQ, storeVal_path
+from getStarted import calc_path, param_path, storeVal_path, bonds_path, base_path
 
 def make_RBMEng_diff_plot(nspins, alpha, timeout, nruns, precision_param):
     figcount = 1

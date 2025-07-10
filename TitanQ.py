@@ -1,23 +1,20 @@
 import numpy as np
-from scipy.constants import precision
 from titanq import Model, Vtype, Target, S3Storage, Precision
 from titanq.credits import get_credits_summary
 import os
 from dotenv import load_dotenv
-import glob
 import json
-import asyncio
 
 load_dotenv()
+
+from getStarted import calc_path, param_path, storeVal_path
 
 # needed to make the API call to TitanQ servers
 TITANQ_DEV_API_KEY = os.getenv("TITANQ_DEV_API_KEY")
 get_credits_summary(TITANQ_DEV_API_KEY)
 
 
-
-
-def convert_weights_biases_to_zero_one_basis(weights, biases):
+def convert_to_zero_one_basis(weights, biases):
     '''
     TitanQ works with different numbers {0,1} instead of {-1,1}
     :param weights:
@@ -42,7 +39,7 @@ def TitanQFunc(nspins, alpha, weightsIsing, biasIsing, timeout, precision_param,
     :return:
     '''
 
-    weights_zero_one, biases_zero_one = convert_weights_biases_to_zero_one_basis(weightsIsing, biasIsing)
+    weights_zero_one, biases_zero_one = convert_to_zero_one_basis(weightsIsing, biasIsing)
     model = Model(
         api_key=TITANQ_DEV_API_KEY
     )

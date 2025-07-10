@@ -1,5 +1,4 @@
 import numpy as np
-import time
 from tqdm import tqdm
 import h5py
 import os
@@ -7,7 +6,7 @@ import glob
 import json
 
 from TitanQ import TitanQFunc, magn_filt
-from NQS import stochReconfig, calcLocEng_new, logWaveFunc, genBonds_2D, getFullVarPar_2D
+from NQS import stochReconfig, calcLocEng, logWaveFunc, genBonds_2D, getFullVarPar_2D
 from getStarted import calc_path, param_path, storeVal_path
 
 nspins_ls = [16,36,64,100,196,324,484]
@@ -228,7 +227,7 @@ def getVarEngVal(nspins, alpha, timeout, nruns, ising_params_id, precision_param
 
         # calculate variational energy and create array for all states
         for states_ind in tqdm(range(len(TQ_filt_states))):
-            locEng = calcLocEng_new(np.array(TQ_filt_states[states_ind]), alpha, bonds, weightsRBM, biasRBM)
+            locEng = calcLocEng(np.array(TQ_filt_states[states_ind]), alpha, bonds, weightsRBM, biasRBM)
             varEngVal_arr.append( locEng / (4 * nspins) )
             locEngVal_arr.append( locEng )
 
@@ -399,9 +398,6 @@ def trainingLoop_TQ(nspins: int, alpha: int, epochs: int, nruns_init = 50 , time
         # transform the weights so they can be used by TitanQ again.
         weightsFull, weightsMask, biasFull, biasMask = getFullVarPar_2D(weightsRBM, biasRBM, nspins, alpha)
         weightsIsing, biasIsing = varPar_to_Ising(weightsFull, biasFull)
-
-        # storing the variational energy every iteration
-        np.savetxt(f"{storeVal_path}/varEngVal_arr/varEng_evolution_n{nspins}_a{alpha}_{epochs}.csv", varEngVal_arr, delimiter = ",")
 
         mag_0_ratio = amount_of_filt_samples / ( nruns * num_engines )
         new_nruns = int(desiredSamples/(num_engines * mag_0_ratio))

@@ -1,9 +1,6 @@
 import numpy as np
-from tqdm import tqdm
-import json
 from numba import njit, jit
 
-from TitanQ import base_path, calc_path, param_path, bonds_path, TitanQFunc, magn_filt
 from Mask_2D import bias_map, generate_W_mask, weight_map_numba
 
 @njit
@@ -165,9 +162,9 @@ def genBonds_2D(N, pbc=True):
 
     return lattice
 
-def calcLocEng(state, alpha, bonds, weights, bias):
+def calcLocEng_old(state, alpha, bonds, weights, bias):
     """
-    :param alpha: not used here, but staying consistent with the calcLocEng_new for easier application in other functions.
+    :param alpha: not used here, but staying consistent with the calcLocEng for easier application in other functions.
     :return: local energy per state
     """
     locEng = 0
@@ -181,7 +178,7 @@ def calcLocEng(state, alpha, bonds, weights, bias):
     return locEng
 
 @njit
-def calcLocEng_new(state, alpha, bonds, weightsRBM, biasRBM):
+def calcLocEng(state, alpha, bonds, weightsRBM, biasRBM):
     """ Faster method (w.r.t. calcLocEng) of calculating the local energy (and therefore the variational energy) with use of a lookup table. (source: dissertation Giammarco)
     :return:
     """
@@ -239,7 +236,7 @@ def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, a
         obsk[: alpha * N] = np.outer(state, np.tanh(weightedSum))[weightsMask]
         obsk[alpha * N:] = np.tanh(weightedSum)[biasMask]
 
-        locEng = calcLocEng_new(state, alpha, bonds, weightsFull, biasFull)
+        locEng = calcLocEng(state, alpha, bonds, weightsFull, biasFull)
 
         expVal_obsk += obsk / sampleSize
         expVal_obsk_obsk += np.outer(obsk, obsk) / sampleSize
@@ -251,4 +248,4 @@ def stochReconfig(weightsFull, weightsMask, biasFull, biasMask, bonds, states, a
 
     grad = S_kk_inv @ Fk
 
-    return grad[:alpha * N].reshape(N, alpha), grad[alpha * N:], expVal_locEng, expVal_locEng / (4 * N), reg_dyn
+    return grad[:alpha * N].reshape(N, alpha), grad[alpha * N:], expVal_locEng, expVal_locEng / (4 * N)
